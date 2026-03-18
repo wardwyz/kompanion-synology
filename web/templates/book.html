@@ -33,12 +33,12 @@
             <div class="grid">
                 <label>
                     系列
-                    <input type="text" name="series" placeholder="请输入系列名称" value="{{ .Series }}">
+                    <input type="text" name="series" placeholder="请输入系列名称" value="{{ if .Series }}{{ .Series }}{{ else }}文学{{ end }}">
                 </label>
                 <label>
                     系列序号
                     <input type="number" name="series_index" placeholder="如：1 或 1.5" step="0.1" min="0"
-                        value="{{ with .SeriesIndex }}{{ .Decimal }}{{ end }}">
+                        value="{{ with .SeriesIndex }}{{ .Decimal }}{{ else }}0.1{{ end }}">
                 </label>
             </div>
 
@@ -51,11 +51,11 @@
             <div class="grid">
                 <label>
                     出版年份
-                    <input type="number" name="year" placeholder="YYYY" min="1000" max="9999" value="{{ .Year }}">
+                    <input type="number" name="year" placeholder="YYYY" min="1000" max="9999" value="{{ if .Year }}{{ .Year }}{{ else }}2000{{ end }}">
                 </label>
                 <label>
                     出版社
-                    <input type="text" name="publisher" placeholder="请输入出版社" value="{{ .Publisher }}">
+                    <input type="text" name="publisher" placeholder="请输入出版社" value="{{ if .Publisher }}{{ .Publisher }}{{ else }}未知{{ end }}">
                 </label>
             </div>
 
@@ -64,12 +64,7 @@
 
                 <a href="/books/{{.ID}}/download" target="_blank" class="button book-action-button">下载</a>
 
-                <button type="submit" class="button danger book-action-button" form="delete-book-form">删除</button>
             </div>
-        </form>
-
-        <form id="delete-book-form" method="post" action="/books/{{.ID}}/delete"
-            onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
         </form>
     </div>
 

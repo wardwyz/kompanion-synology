@@ -27,6 +27,7 @@ https://github.com/vanadium23/kompanion
    3. 目录地址：`https://your-kompanion.org/opds/`
    4. 用户名：设备名
    5. 密码：设备密码
+## ios平台使用Readest类似配置
 ## docker-compose
 XXX 更换成自己的用户名密码
 ```

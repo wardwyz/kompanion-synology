@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vanadium23/kompanion/internal/entity"
@@ -100,8 +102,7 @@ func renderBooksPage(
 }
 
 func (r *booksRoutes) uploadBook(c *gin.Context) {
-	// single uploadedBookFile
-	uploadedBookFile, err := c.FormFile("book")
+	form, err := c.MultipartForm()
 	if err != nil {
 		r.logger.Error(err, "http - v1 - shelf - uploadBook")
 		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
@@ -110,35 +111,110 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 		return
 	}
 
-	// make by temp files
-	tempFile, err := os.CreateTemp("", "")
-	if err != nil {
-		r.logger.Error(err, "http - v1 - shelf - putBook")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusInternalServerError, gin.H{
-			"uploadError": "服务器暂时无法创建上传临时文件，请稍后重试。",
-		})
-		return
-	}
-	filepath := tempFile.Name()
-	defer os.Remove(filepath)
-	defer tempFile.Close()
-	if err := c.SaveUploadedFile(uploadedBookFile, filepath); err != nil {
-		r.logger.Error(err, "http - web - shelf - saveUploadedFile")
+	uploadedBookFiles := form.File["book"]
+	if len(uploadedBookFiles) == 0 {
 		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
-			"uploadError": "上传文件失败，请确认文件大小和网络连接后重试。",
+			"uploadError": "请选择要上传的书籍文件。",
 		})
 		return
 	}
 
-	book, err := r.shelf.StoreBook(c.Request.Context(), tempFile, uploadedBookFile.Filename)
-	if err != nil && err != entity.ErrBookAlreadyExists {
-		r.logger.Error(err, "http - v1 - shelf - putBook")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
-			"uploadError": "文件上传成功，但解析失败。请确认上传的是支持的电子书格式（EPUB/PDF/FB2）。",
-		})
+	successCount := 0
+	duplicateCount := 0
+	failedFiles := make([]string, 0)
+	var latestBookID string
+
+	for _, uploadedBookFile := range uploadedBookFiles {
+		tempFile, err := os.CreateTemp("", "book-upload-*")
+		if err != nil {
+			r.logger.Error(err, "http - v1 - shelf - putBook")
+			renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusInternalServerError, gin.H{
+				"uploadError": "服务器暂时无法创建上传临时文件，请稍后重试。",
+			})
+			return
+		}
+
+		tempPath := tempFile.Name()
+		if err := c.SaveUploadedFile(uploadedBookFile, tempPath); err != nil {
+			r.logger.Error(err, "http - web - shelf - saveUploadedFile")
+			tempFile.Close()
+			os.Remove(tempPath)
+			failedFiles = append(failedFiles, uploadedBookFile.Filename)
+			continue
+		}
+
+		book, err := r.shelf.StoreBook(c.Request.Context(), tempFile, uploadedBookFile.Filename)
+		tempFile.Close()
+		os.Remove(tempPath)
+		if err != nil {
+			if err == entity.ErrBookAlreadyExists {
+				duplicateCount++
+				latestBookID = book.ID
+				continue
+			}
+			r.logger.Error(err, "http - v1 - shelf - putBook")
+			failedFiles = append(failedFiles, uploadedBookFile.Filename)
+			continue
+		}
+
+		successCount++
+		latestBookID = book.ID
+	}
+
+	if len(uploadedBookFiles) == 1 && successCount == 1 && duplicateCount == 0 && len(failedFiles) == 0 && latestBookID != "" {
+		c.Redirect(http.StatusFound, "/books/"+latestBookID)
 		return
 	}
-	c.Redirect(302, "/books/"+book.ID)
+
+	responseData := gin.H{}
+	if message := buildUploadMessage(successCount, duplicateCount); message != "" {
+		responseData["uploadMessage"] = message
+	}
+	if len(failedFiles) > 0 {
+		responseData["uploadError"] = fmt.Sprintf(
+			"%d 个文件处理失败：%s。请确认上传的是支持的电子书格式（EPUB/PDF/FB2）。",
+			len(failedFiles),
+			strings.Join(trimFailedFileNames(failedFiles), "、"),
+		)
+	}
+
+	if successCount == 0 && duplicateCount == 0 && len(failedFiles) == 0 {
+		responseData["uploadError"] = "请选择要上传的书籍文件。"
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, responseData)
+		return
+	}
+
+	status := http.StatusOK
+	if len(failedFiles) > 0 {
+		status = http.StatusBadRequest
+	}
+	renderBooksPage(c, r.shelf, r.progress, r.logger, status, responseData)
+}
+
+func buildUploadMessage(successCount, duplicateCount int) string {
+	parts := make([]string, 0, 2)
+	if successCount > 0 {
+		parts = append(parts, fmt.Sprintf("成功上传 %d 本书", successCount))
+	}
+	if duplicateCount > 0 {
+		parts = append(parts, fmt.Sprintf("%d 个文件已存在，已跳过", duplicateCount))
+	}
+
+	return strings.Join(parts, "；")
+}
+
+func trimFailedFileNames(files []string) []string {
+	trimmed := make([]string, 0, len(files))
+	for _, name := range files {
+		base := filepath.Base(name)
+		if base == "." || base == "/" || base == "" {
+			trimmed = append(trimmed, name)
+			continue
+		}
+		trimmed = append(trimmed, base)
+	}
+
+	return trimmed
 }
 
 func (r *booksRoutes) downloadBook(c *gin.Context) {

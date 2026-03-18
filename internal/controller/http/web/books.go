@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -33,6 +34,17 @@ func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.R
 }
 
 func (r *booksRoutes) listBooks(c *gin.Context) {
+	renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusOK, gin.H{})
+}
+
+func renderBooksPage(
+	c *gin.Context,
+	shelf library.Shelf,
+	progressSync syncpkg.Progress,
+	log logger.Interface,
+	status int,
+	data gin.H,
+) {
 	page := 1
 	perPage := 12 // Show 12 books per page for grid layout
 	if pageStr := c.Query("page"); pageStr != "" {
@@ -41,7 +53,7 @@ func (r *booksRoutes) listBooks(c *gin.Context) {
 		}
 	}
 
-	books, err := r.shelf.ListBooks(c.Request.Context(), "created_at", "desc", page, perPage)
+	books, err := shelf.ListBooks(c.Request.Context(), "created_at", "desc", page, perPage)
 	if err != nil {
 		c.HTML(500, "error", passStandartContext(c, gin.H{"error": err.Error()}))
 		return
@@ -54,9 +66,9 @@ func (r *booksRoutes) listBooks(c *gin.Context) {
 	}
 	booksWithProgress := make([]BookWithProgress, len(books.Books))
 	for i, book := range books.Books {
-		progress, err := r.progress.Fetch(c.Request.Context(), book.DocumentID)
+		progress, err := progressSync.Fetch(c.Request.Context(), book.DocumentID)
 		if err != nil {
-			r.logger.Error(err, "failed to fetch progress for book %s", book.ID)
+			log.Error(err, "failed to fetch progress for book %s", book.ID)
 			progress = entity.Progress{}
 		}
 		booksWithProgress[i] = BookWithProgress{
@@ -65,7 +77,7 @@ func (r *booksRoutes) listBooks(c *gin.Context) {
 		}
 	}
 
-	c.HTML(200, "books", passStandartContext(c, gin.H{
+	pageData := gin.H{
 		"books": booksWithProgress,
 		"pagination": gin.H{
 			"currentPage": page,
@@ -78,7 +90,13 @@ func (r *booksRoutes) listBooks(c *gin.Context) {
 			"firstPage":   books.First(),
 			"lastPage":    books.Last(),
 		},
-	}))
+	}
+
+	for key, value := range data {
+		pageData[key] = value
+	}
+
+	c.HTML(status, "books", passStandartContext(c, pageData))
 }
 
 func (r *booksRoutes) uploadBook(c *gin.Context) {
@@ -86,7 +104,9 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	uploadedBookFile, err := c.FormFile("book")
 	if err != nil {
 		r.logger.Error(err, "http - v1 - shelf - uploadBook")
-		c.JSON(400, passStandartContext(c, gin.H{"message": "book file is required"}))
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
+			"uploadError": "请选择要上传的书籍文件。",
+		})
 		return
 	}
 
@@ -94,18 +114,28 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	tempFile, err := os.CreateTemp("", "")
 	if err != nil {
 		r.logger.Error(err, "http - v1 - shelf - putBook")
-		c.JSON(500, passStandartContext(c, gin.H{"message": "bad request"}))
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusInternalServerError, gin.H{
+			"uploadError": "服务器暂时无法创建上传临时文件，请稍后重试。",
+		})
 		return
 	}
 	filepath := tempFile.Name()
 	defer os.Remove(filepath)
 	defer tempFile.Close()
-	c.SaveUploadedFile(uploadedBookFile, filepath)
+	if err := c.SaveUploadedFile(uploadedBookFile, filepath); err != nil {
+		r.logger.Error(err, "http - web - shelf - saveUploadedFile")
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
+			"uploadError": "上传文件失败，请确认文件大小和网络连接后重试。",
+		})
+		return
+	}
 
 	book, err := r.shelf.StoreBook(c.Request.Context(), tempFile, uploadedBookFile.Filename)
 	if err != nil && err != entity.ErrBookAlreadyExists {
 		r.logger.Error(err, "http - v1 - shelf - putBook")
-		c.JSON(500, passStandartContext(c, gin.H{"message": "internal server error"}))
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
+			"uploadError": "文件上传成功，但解析失败。请确认上传的是支持的电子书格式（EPUB/PDF/FB2）。",
+		})
 		return
 	}
 	c.Redirect(302, "/books/"+book.ID)

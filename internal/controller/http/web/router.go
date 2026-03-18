@@ -32,6 +32,7 @@ func NewRouter(
 	version string,
 ) {
 	// Options
+	handler.MaxMultipartMemory = 512 << 20 // 512 MiB
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
 	handler.Use(func(c *gin.Context) {

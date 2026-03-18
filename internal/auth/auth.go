@@ -81,6 +81,10 @@ func (a *AuthService) AddUserDevice(ctx context.Context, device_name, password s
 }
 
 func (a *AuthService) DeactivateUserDevice(ctx context.Context, device_name string) error {
+	return a.repo.DeactivateDevice(ctx, device_name)
+}
+
+func (a *AuthService) DeleteUserDevice(ctx context.Context, device_name string) error {
 	return a.repo.DeleteDevice(ctx, device_name)
 }
 

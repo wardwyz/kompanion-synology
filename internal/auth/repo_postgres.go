@@ -134,7 +134,7 @@ func (r *UserDatabaseRepo) GetDeviceByName(ctx context.Context, deviceName strin
 	return device, nil
 }
 
-func (r *UserDatabaseRepo) DeleteDevice(ctx context.Context, deviceName string) error {
+func (r *UserDatabaseRepo) DeactivateDevice(ctx context.Context, deviceName string) error {
 	sql := `
 		UPDATE auth_device
 		SET is_active = false,
@@ -145,7 +145,7 @@ func (r *UserDatabaseRepo) DeleteDevice(ctx context.Context, deviceName string) 
 
 	_, err := r.Pool.Exec(ctx, sql, args...)
 	if err != nil {
-		return fmt.Errorf("UserDatabaseRepo - DeleteDevice - r.Pool.Exec: %w", err)
+		return fmt.Errorf("UserDatabaseRepo - DeactivateDevice - r.Pool.Exec: %w", err)
 	}
 
 	return nil
@@ -174,4 +174,19 @@ func (r *UserDatabaseRepo) ListDevices(ctx context.Context) ([]Device, error) {
 	}
 
 	return devices, nil
+}
+
+func (r *UserDatabaseRepo) DeleteDevice(ctx context.Context, deviceName string) error {
+	sql := `
+		DELETE FROM auth_device
+		WHERE device_name = $1
+	`
+	args := []interface{}{deviceName}
+
+	_, err := r.Pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("UserDatabaseRepo - DeleteDevice - r.Pool.Exec: %w", err)
+	}
+
+	return nil
 }

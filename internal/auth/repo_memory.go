@@ -97,7 +97,7 @@ func (mr *MemoryRepo) GetDeviceByName(ctx context.Context, deviceName string) (D
 	return device, nil
 }
 
-func (mr *MemoryRepo) DeleteDevice(ctx context.Context, deviceName string) error {
+func (mr *MemoryRepo) DeactivateDevice(ctx context.Context, deviceName string) error {
 	mr.mu.Lock()
 	defer mr.mu.Unlock()
 
@@ -117,4 +117,15 @@ func (mr *MemoryRepo) ListDevices(ctx context.Context) ([]Device, error) {
 		devices = append(devices, device)
 	}
 	return devices, nil
+}
+
+func (mr *MemoryRepo) DeleteDevice(ctx context.Context, deviceName string) error {
+	mr.mu.Lock()
+	defer mr.mu.Unlock()
+
+	if _, ok := mr.devices[deviceName]; !ok {
+		return errors.New("not found")
+	}
+	delete(mr.devices, deviceName)
+	return nil
 }

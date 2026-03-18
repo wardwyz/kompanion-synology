@@ -14,7 +14,7 @@
     <section>
         <h2>添加新设备</h2>
         <form action="/devices/add" method="POST" class="grid">
-            <input type="text" name="name" required placeholder="请输入设备名称">
+            <input type="text" name="device_name" required placeholder="请输入设备名称">
             <input type="text" name="password" required placeholder="请输入设备密码">
             <button type="submit">添加设备</button>
         </form>
@@ -46,10 +46,12 @@
                             </button>
                         </form>
 
-                        <!-- 删除（新增） -->
-                        <button onclick="deleteDevice('{{.Name}}')" class="danger">
-                            删除
-                        </button>
+                        <form action="/devices/delete/{{.Name}}" method="POST" style="display:inline;">
+                            <button type="submit" class="danger"
+                                onclick="return confirm('确定删除该设备吗？此操作不可恢复！')">
+                                删除
+                            </button>
+                        </form>
 
                     </td>
                 </tr>
@@ -62,33 +64,5 @@
         {{end}}
     </section>
 </main>
-
-<!-- 删除设备脚本 -->
-<script>
-async function deleteDevice(name) {
-    if (!confirm("确定删除该设备吗？此操作不可恢复！")) return;
-
-    try {
-        const res = await fetch("/api/devices/delete", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ name })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            alert("删除成功");
-            location.reload();
-        } else {
-            alert("删除失败：" + data.error);
-        }
-    } catch (e) {
-        alert("请求失败");
-    }
-}
-</script>
 
 {{end}}

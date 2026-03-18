@@ -153,6 +153,21 @@ func TestWebDevice(t *testing.T) {
 		Send().Body().FormValues("password").Add("password"),
 		Expect().Status().Equal(http.StatusBadRequest),
 	)
+
+	Test(t,
+		Description("Device Delete"),
+		HTTPClient(client),
+		Post(basePath+"/devices/delete/"+device_name),
+		Expect().Status().Equal(http.StatusFound),
+	)
+
+	Test(t,
+		Description("Deleted Device Cannot Authenticate"),
+		Get(basePath+"/v1/users/me"),
+		Send().Headers("x-auth-user").Add(device_name),
+		Send().Headers("x-auth-key").Add(hashSyncPassword("password")),
+		Expect().Status().Equal(http.StatusUnauthorized),
+	)
 }
 
 // syncs (only with devices)

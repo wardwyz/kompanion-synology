@@ -59,17 +59,17 @@
                 </label>
             </div>
 
-            <div class="grid">
-                <button type="submit" class="button success">保存</button>
+            <div class="book-actions">
+                <button type="submit" class="button success book-action-button">保存</button>
 
-                <a href="/books/{{.ID}}/download" target="_blank">
-                    <button type="button" class="button">下载</button>
-                </a>
+                <a href="/books/{{.ID}}/download" target="_blank" class="button book-action-button">下载</a>
+
+                <button type="submit" class="button danger book-action-button" form="delete-book-form">删除</button>
             </div>
         </form>
 
-        <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
-            <button type="submit" class="button danger">删除</button>
+        <form id="delete-book-form" method="post" action="/books/{{.ID}}/delete"
+            onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
         </form>
     </div>
 

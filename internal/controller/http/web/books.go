@@ -151,9 +151,7 @@ func (r *booksRoutes) downloadBook(c *gin.Context) {
 	}
 	defer file.Close()
 
-	c.Header("Content-Disposition", "attachment; filename="+book.Filename())
-	c.Header("Content-Type", "application/octet-stream")
-	c.File(file.Name())
+	serveBookDownload(c, file, book.Filename())
 }
 
 func (r *booksRoutes) viewBook(c *gin.Context) {

@@ -17,6 +17,33 @@
     height: auto;
 }
 
+.book-actions {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.book-action-button {
+    flex: 1 1 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0;
+    min-height: calc(1em + 2rem + var(--border-thickness) * 2);
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .edit-book-article {
+        flex-direction: column;
+    }
+
+    .book-actions {
+        flex-direction: column;
+    }
+}
+
 /* books */
 .book-card {
     display: flex;

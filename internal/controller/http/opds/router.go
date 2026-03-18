@@ -31,6 +31,7 @@ func NewRouter(
 		h.GET("/", sh.listShelves)
 		h.GET("/newest/", sh.listNewest)
 		h.GET("/book/:bookID/download", sh.downloadBook)
+		h.GET("/book/:bookID/cover", sh.viewBookCover)
 		// TODO: search
 	}
 }
@@ -87,6 +88,21 @@ func (r *OPDSRouter) downloadBook(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename="+book.Filename())
 	c.Header("Content-Type", "application/octet-stream")
 	c.File(file.Name())
+}
+
+func (r *OPDSRouter) viewBookCover(c *gin.Context) {
+	bookID := c.Param("bookID")
+
+	cover, err := r.books.ViewCover(c.Request.Context(), bookID)
+	if err != nil {
+		r.logger.Error(err, "http - opds - shelf - viewBookCover")
+		c.Status(http.StatusNotFound)
+		return
+	}
+	defer cover.Close()
+
+	c.Header("Content-Type", "image/jpeg")
+	c.File(cover.Name())
 }
 
 func basicAuth(auth auth.AuthInterface) gin.HandlerFunc {

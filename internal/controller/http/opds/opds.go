@@ -14,7 +14,8 @@ const (
 	DirMime  = "application/atom+xml;profile=opds-catalog;kind=navigation"
 	DirRel   = "subsection"
 	FileRel  = "http://opds-spec.org/acquisition"
-	CoverRel = "http://opds-spec.org/cover"
+	CoverRel = "http://opds-spec.org/image"
+	ThumbRel = "http://opds-spec.org/image/thumbnail"
 )
 
 // Feed is a main frame of OPDS.
@@ -37,12 +38,13 @@ type Link struct {
 
 // Entry is a struct of OPDS entry properties.
 type Entry struct {
-	ID      string  `xml:"id"`
-	Updated string  `xml:"updated"`
-	Title   string  `xml:"title"`
-	Author  Author  `xml:"author,ommitempty"`
-	Summary Summary `xml:"summary,ommitempty"`
-	Link    []Link  `xml:"link"`
+	ID       string     `xml:"id"`
+	Updated  string     `xml:"updated"`
+	Title    string     `xml:"title"`
+	Author   Author     `xml:"author,ommitempty"`
+	Summary  Summary    `xml:"summary,ommitempty"`
+	Category []Category `xml:"category,omitempty"`
+	Link     []Link     `xml:"link"`
 }
 
 type Author struct {
@@ -52,6 +54,11 @@ type Author struct {
 type Summary struct {
 	Type string `xml:"type,attr"`
 	Text string `xml:",chardata"`
+}
+
+type Category struct {
+	Term  string `xml:"term,attr"`
+	Label string `xml:"label,attr,omitempty"`
 }
 
 func BuildFeed(id, title, href string, entries []Entry, additionalLinks []Link) *Feed {
@@ -97,17 +104,44 @@ func translateBooksToEntries(books []entity.Book) []Entry {
 				Type: "text",
 				Text: truncateText(book.Description, 300),
 			},
+			Category: buildBookCategories(book),
 			Link: []Link{
 				{
 					Href: fmt.Sprintf("/opds/book/%s/download", book.ID),
 					Type: book.MimeType(),
 					Rel:  FileRel,
-					// Mtime: book.UpdatedAt.Format(AtomTime),
+				},
+				{
+					Href: fmt.Sprintf("/opds/book/%s/cover", book.ID),
+					Type: "image/jpeg",
+					Rel:  CoverRel,
+				},
+				{
+					Href: fmt.Sprintf("/opds/book/%s/cover", book.ID),
+					Type: "image/jpeg",
+					Rel:  ThumbRel,
 				},
 			},
 		})
 	}
 	return entries
+}
+
+func buildBookCategories(book entity.Book) []Category {
+	categories := make([]Category, 0, 4)
+	if book.Series != "" {
+		categories = append(categories, Category{Term: book.Series, Label: "系列"})
+	}
+	if book.Publisher != "" {
+		categories = append(categories, Category{Term: book.Publisher, Label: "出版社"})
+	}
+	if book.Format != "" {
+		categories = append(categories, Category{Term: book.Format, Label: "格式"})
+	}
+	if book.Year > 0 {
+		categories = append(categories, Category{Term: fmt.Sprintf("%d", book.Year), Label: "出版年份"})
+	}
+	return categories
 }
 
 func truncateText(text string, maxLen int) string {

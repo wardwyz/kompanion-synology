@@ -2,6 +2,8 @@ package web
 
 import (
 	"fmt"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"strconv"
 
@@ -82,33 +84,57 @@ func (r *booksRoutes) listBooks(c *gin.Context) {
 }
 
 func (r *booksRoutes) uploadBook(c *gin.Context) {
-	// single uploadedBookFile
-	uploadedBookFile, err := c.FormFile("book")
+	form, err := c.MultipartForm()
 	if err != nil {
-		r.logger.Error(err, "http - v1 - shelf - uploadBook")
-		c.JSON(400, passStandartContext(c, gin.H{"message": "book file is required"}))
+		r.logger.Error(err, "http - web - shelf - uploadBook")
+		c.JSON(http.StatusBadRequest, passStandartContext(c, gin.H{"message": "book file is required"}))
 		return
 	}
 
-	// make by temp files
+	uploadedBookFiles := form.File["book"]
+	if len(uploadedBookFiles) == 0 {
+		c.JSON(http.StatusBadRequest, passStandartContext(c, gin.H{"message": "book file is required"}))
+		return
+	}
+
+	storedBooks := make([]entity.Book, 0, len(uploadedBookFiles))
+	for _, uploadedBookFile := range uploadedBookFiles {
+		book, err := r.storeUploadedBook(c, uploadedBookFile)
+		if err != nil {
+			r.logger.Error(err, "http - web - shelf - uploadBook - storeUploadedBook")
+			c.JSON(http.StatusInternalServerError, passStandartContext(c, gin.H{"message": "internal server error"}))
+			return
+		}
+		storedBooks = append(storedBooks, book)
+	}
+
+	if len(storedBooks) == 1 {
+		c.Redirect(http.StatusFound, "/books/"+storedBooks[0].ID)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/books")
+}
+
+func (r *booksRoutes) storeUploadedBook(c *gin.Context, uploadedBookFile *multipart.FileHeader) (entity.Book, error) {
 	tempFile, err := os.CreateTemp("", "")
 	if err != nil {
-		r.logger.Error(err, "http - v1 - shelf - putBook")
-		c.JSON(500, passStandartContext(c, gin.H{"message": "bad request"}))
-		return
+		return entity.Book{}, err
 	}
 	filepath := tempFile.Name()
 	defer os.Remove(filepath)
 	defer tempFile.Close()
-	c.SaveUploadedFile(uploadedBookFile, filepath)
+
+	if err := c.SaveUploadedFile(uploadedBookFile, filepath); err != nil {
+		return entity.Book{}, err
+	}
 
 	book, err := r.shelf.StoreBook(c.Request.Context(), tempFile, uploadedBookFile.Filename)
 	if err != nil && err != entity.ErrBookAlreadyExists {
-		r.logger.Error(err, "http - v1 - shelf - putBook")
-		c.JSON(500, passStandartContext(c, gin.H{"message": "internal server error"}))
-		return
+		return entity.Book{}, err
 	}
-	c.Redirect(302, "/books/"+book.ID)
+
+	return book, nil
 }
 
 func (r *booksRoutes) downloadBook(c *gin.Context) {

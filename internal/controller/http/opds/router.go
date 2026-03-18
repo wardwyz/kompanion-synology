@@ -1,14 +1,13 @@
 package opds
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vanadium23/kompanion/internal/auth"
+	downloadhttp "github.com/vanadium23/kompanion/internal/controller/http/download"
 	"github.com/vanadium23/kompanion/internal/library"
 	"github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
@@ -87,7 +86,9 @@ func (r *OPDSRouter) downloadBook(c *gin.Context) {
 	}
 	defer file.Close()
 
-	serveBookDownload(c, file, book.Filename())
+	if err := downloadhttp.Serve(c.Writer, c.Request, file, book.Filename()); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
+	}
 }
 
 func (r *OPDSRouter) viewBookCover(c *gin.Context) {
@@ -123,23 +124,4 @@ func basicAuth(auth auth.AuthInterface) gin.HandlerFunc {
 		}
 		c.Next()
 	}
-}
-
-func serveBookDownload(c *gin.Context, file *os.File, filename string) {
-	if _, err := file.Seek(0, 0); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
-		return
-	}
-
-	stat, err := file.Stat()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "internal server error"})
-		return
-	}
-
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
-	c.Header("Content-Type", "application/octet-stream")
-	c.Header("Accept-Ranges", "bytes")
-
-	http.ServeContent(c.Writer, c.Request, filename, stat.ModTime(), file)
 }

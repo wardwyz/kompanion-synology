@@ -69,12 +69,13 @@ func (a testAuth) CheckDevicePassword(context.Context, string, string, bool) boo
 func (a testAuth) ListDevices(context.Context) ([]auth.Device, error) { return nil, nil }
 
 func TestOPDSDownloadBookSupportsRangeRequests(t *testing.T) {
-	t.Parallel()
-
 	gin.SetMode(gin.TestMode)
 
 	file, err := os.CreateTemp(t.TempDir(), "book-*.epub")
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = file.Close()
+	})
 	_, err = file.WriteString("0123456789")
 	require.NoError(t, err)
 

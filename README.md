@@ -1,6 +1,7 @@
-# 目前仅做了群晖docker发布，与汉化。请关注原作者
-1. 使用chatgpt汉化
-2. 使用codex增加删除功能
+# 群晖docker发布。请关注原作者
+1. 汉化
+2. 增加删除功能
+3. 优化大文件上传空白页
 # KOmpanion - bookshelf companion for KOreader
 
 KOmpanion is a minimalistic library web application, that tightly coupled to KOReader features.

@@ -11,38 +11,43 @@
 </head>
 
 <body>
+    <div class="site-shell">
+        <header class="site-header">
+            <div class="brand-block">
+                <div class="brand-mark">
+                    <span class="brand-icon">📚</span>
+                    <span>KOmpanion</span>
+                </div>
+                <p class="brand-subtitle">简洁、清晰、像书架一样管理你的电子书与阅读进度。</p>
+            </div>
 
-    <!-- 主站头部 -->
-    <header class="header">
-        <table>
-            <tr>
-                <td style="flex-grow: 1;">KOmpanion</td>
-                {{ if .isAuthenticated }}
-                <td><a href="/books/">> 书籍</a></td>
-                <td><a href="/stats/">> 统计</a></td>
-                <td><a href="/devices/">> 设备</a></td>
-                <td><a href="/auth/logout/">退出登录</a></td>
-                {{ else }}
-                <td>登录页面</td>
-                {{ end}}
-            </tr>
-        </table>
-    </header>
+            {{ if .isAuthenticated }}
+            <nav class="nav-links" aria-label="主导航">
+                <a class="nav-link" href="/books/">书架</a>
+                <a class="nav-link" href="/stats/">统计</a>
+                <a class="nav-link" href="/devices/">设备</a>
+                <a class="nav-link" href="/auth/logout/">退出</a>
+            </nav>
+            {{ else }}
+            <div class="nav-links">
+                <span class="nav-link">登录后即可进入书架</span>
+            </div>
+            {{ end}}
+        </header>
 
-    <main>
-        {{ block "content" . }}默认内容{{ end }}
-    </main>
+        <main>
+            {{ block "content" . }}默认内容{{ end }}
+        </main>
 
-    <footer>
-        <!-- 简单页脚 -->
-        <hr>
-        <p style="text-align: center; color: var(--text-color-alt);">
-            由 <a href="https://github.com/vanadium23/kompanion/">KOmpanion</a> 驱动，
-            版本：<strong>{{ Version }}</strong>，
-            页面耗时：<strong>{{ LoadTimes .startTime }}</strong>
-        </p>
-    </footer>
-
+        <footer>
+            <hr>
+            <p class="footer-note">
+                由 <a href="https://github.com/vanadium23/kompanion/">KOmpanion</a> 驱动，
+                版本：<strong>{{ Version }}</strong>，
+                页面耗时：<strong>{{ LoadTimes .startTime }}</strong>
+            </p>
+        </footer>
+    </div>
 </body>
 
 </html>

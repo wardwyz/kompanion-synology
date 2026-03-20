@@ -1,114 +1,157 @@
-{{ define "title" }}书籍 - KOmpanion{{ end }}
+{{ define "title" }}书架 - KOmpanion{{ end }}
 
 {{ define "content" }}
-<div>
-    <form method="post" action="/books/upload" enctype="multipart/form-data" class="grid">
-        <div>
-            <input type="file" name="book" accept=".epub,.pdf,.fb2">
+<div class="page-stack">
+    <section class="hero-panel">
+        <div class="hero-copy">
+            <p class="hero-kicker">Bookshelf</p>
+            <h1>你的电子书书架</h1>
+            <p class="page-lead">统一封面、元数据与阅读进度，让每一本书都像整齐陈列在同一排书架上。</p>
+            <div class="hero-actions">
+                <a class="button-link" href="#local-upload">上传新书</a>
+                <a class="button-secondary" href="#remote-import">远程导入</a>
+            </div>
         </div>
-        <button style="flex-grow: 1;">上传本地文件</button>
-    </form>
-    {{ if .uploadError }}
-    <p class="help is-danger" style="margin-top: 0.75rem; color: #d33;">{{ .uploadError }}</p>
-    {{ end }}
-</div>
+        <aside class="hero-highlight">
+            <p class="section-kicker">书架特色</p>
+            <ul class="highlight-list">
+                <li>封面统一展示，快速定位目标书籍。</li>
+                <li>进度、系列与简介集中呈现。</li>
+                <li>本地上传与链接导入使用一致操作区。</li>
+            </ul>
+        </aside>
+    </section>
 
-<div style="margin-top: 1rem; padding: 1rem; border: 1px solid var(--table-border-color); border-radius: 8px;">
-    <h3 style="margin-top: 0;">Z-Library / 远程链接导入</h3>
-    <p style="margin-bottom: 0.75rem; color: var(--text-color-alt);">
-        可先打开 Z-Library 查书并获取最终的下载链接，再把该链接粘贴到下面，服务器会自动下载并导入到 KOmpanion。
-        由于浏览器跨站限制，第三方站点的“下载”按钮无法直接自动触发本站上传。
-    </p>
-    <p style="margin-bottom: 0.75rem;">
-        <a href="{{ .zLibraryURL }}" target="_blank" rel="noopener noreferrer">打开 Z-Library</a>
-    </p>
-    <form method="post" action="/books/upload-url" class="grid">
-        <div>
-            <input type="url" name="url" placeholder="粘贴可直接下载 .epub / .pdf / .fb2 文件的链接" value="{{ .remoteUploadURL }}" required>
-        </div>
-        <button style="flex-grow: 1;">从链接导入</button>
-    </form>
-    {{ if .remoteUploadError }}
-    <p class="help is-danger" style="margin-top: 0.75rem; color: #d33;">{{ .remoteUploadError }}</p>
-    {{ end }}
-</div>
-
-<section>
-    {{ range .books }}
-    <div class="book-card">
-        <div class="book-cover">
-            <a href="/books/{{.ID}}">
-                <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
-            </a>
+    <section class="section-card" id="local-upload">
+        <div class="section-header">
+            <div>
+                <p class="section-kicker">Import</p>
+                <h2>添加到书架</h2>
+                <p class="section-intro">支持本地上传与远程导入，保持同一套简洁操作体验。</p>
+            </div>
         </div>
 
-        <div class="book-info">
-            <h3 class="book-title">
-                <a href="/books/{{.ID}}">
-                    {{.Title}}
-                </a>
-            </h3>
+        <form method="post" action="/books/upload" enctype="multipart/form-data" class="toolbar-form">
+            <label class="field-label" style="flex: 1 1 20rem;">
+                选择本地文件
+                <input type="file" name="book" accept=".epub,.pdf,.fb2">
+            </label>
+            <button type="submit">上传本地文件</button>
+        </form>
+        {{ if .uploadError }}
+        <p class="status-message">{{ .uploadError }}</p>
+        {{ end }}
 
-            <p class="book-author">作者：{{.Author}}</p>
+        <hr>
 
-            {{ if .Series }}
-            <p class="book-series">
-                系列：{{ .Series }}{{ with .SeriesIndex }} #{{ .Decimal }}{{ end }}
-            </p>
-            {{ end }}
+        <div id="remote-import">
+            <div class="section-header">
+                <div>
+                    <h2>Z-Library / 远程链接导入</h2>
+                    <p class="section-intro">先获取可直接下载的文件链接，再交给 KOmpanion 自动导入归档。</p>
+                </div>
+                <a class="button-secondary" href="{{ .zLibraryURL }}" target="_blank" rel="noopener noreferrer">打开 Z-Library</a>
+            </div>
 
-            {{ if .Description }}
-            <p class="book-description">简介：{{ truncate .Description 100 }}</p>
-            {{ end }}
-
-            <p class="book-progress">
-                阅读进度：{{ generateProgressBar .Progress 15 }} // {{ .Progress }}%
-            </p>
-
-            <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
-                <button class="delete-btn" type="submit">删除</button>
+            <form method="post" action="/books/upload-url" class="toolbar-form">
+                <label class="field-label" style="flex: 1 1 26rem;">
+                    下载链接
+                    <input type="url" name="url" placeholder="粘贴可直接下载 .epub / .pdf / .fb2 文件的链接" value="{{ .remoteUploadURL }}" required>
+                </label>
+                <button type="submit">从链接导入</button>
             </form>
+            {{ if .remoteUploadError }}
+            <p class="status-message">{{ .remoteUploadError }}</p>
+            {{ end }}
         </div>
-    </div>
+    </section>
+
+    <section class="section-card">
+        <div class="section-header">
+            <div>
+                <p class="section-kicker">Collection</p>
+                <h2>书架藏书</h2>
+                <p class="section-intro">以统一卡片风格浏览封面、系列与阅读状态。</p>
+            </div>
+        </div>
+
+        {{ if .books }}
+        <div class="books-grid">
+            {{ range .books }}
+            <article class="book-card">
+                <a class="book-cover book-cover-link" href="/books/{{.ID}}">
+                    <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
+                </a>
+
+                <div class="book-info">
+                    <h3 class="book-title"><a href="/books/{{.ID}}">{{.Title}}</a></h3>
+
+                    <div class="book-meta">
+                        <span class="meta-chip"><span class="meta-label">作者</span>{{.Author}}</span>
+                        {{ if .Series }}
+                        <span class="meta-chip"><span class="meta-label">系列</span>{{ .Series }}{{ with .SeriesIndex }} #{{ .Decimal }}{{ end }}</span>
+                        {{ end }}
+                    </div>
+
+                    {{ if .Description }}
+                    <p class="book-description">{{ truncate .Description 120 }}</p>
+                    {{ end }}
+
+                    <div class="progress-row">
+                        <div class="progress-track" aria-hidden="true">
+                            <span class="progress-fill" style="width: {{ .Progress }}%;"></span>
+                        </div>
+                        <span class="progress-text">阅读进度 {{ .Progress }}%</span>
+                    </div>
+
+                    <div class="book-actions">
+                        <a class="button-secondary book-action-button" href="/books/{{.ID}}">查看详情</a>
+                        <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
+                            <button class="button-danger" type="submit">删除</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+            {{ end }}
+        </div>
+        {{ else }}
+        <div class="empty-state">
+            <h3>书架还是空的</h3>
+            <p>先上传一本 EPUB、PDF 或 FB2，让你的书架开始成型。</p>
+        </div>
+        {{ end }}
+    </section>
+
+    {{ with .pagination }}
+    <nav class="pagination" role="navigation" aria-label="分页">
+        {{ if .hasPrev }}
+        <a href="?page={{ .prevPage }}" class="pagination-prev">上一页</a>
+        {{ end }}
+
+        <ul class="pagination-list">
+            {{ if gt .currentPage 1 }}
+            <li><a href="?page=1" class="pagination-link">1</a></li>
+            {{ if gt .currentPage 2 }}
+            <li><span class="pagination-ellipsis">&hellip;</span></li>
+            {{ end }}
+            {{ end }}
+
+            <li>
+                <a href="?page={{ .currentPage }}" class="pagination-link is-current">{{ .currentPage }}</a>
+            </li>
+
+            {{ if lt .currentPage .totalPages }}
+            {{ if lt .currentPage (subtract .totalPages 1) }}
+            <li><span class="pagination-ellipsis">&hellip;</span></li>
+            {{ end }}
+            <li><a href="?page={{ .totalPages }}" class="pagination-link">{{ .totalPages }}</a></li>
+            {{ end }}
+        </ul>
+
+        {{ if .hasNext }}
+        <a href="?page={{ .nextPage }}" class="pagination-next">下一页</a>
+        {{ end }}
+    </nav>
     {{ end }}
-</section>
-
-{{ with .pagination }}
-<nav class="pagination" role="navigation" aria-label="分页">
-    {{ if .hasPrev }}
-    <a href="?page={{ .prevPage }}" class="pagination-prev">上一页</a>
-    {{ end }}
-
-    {{ if .hasNext }}
-    <a href="?page={{ .nextPage }}" class="pagination-next">下一页</a>
-    {{ end }}
-
-    <ul class="pagination-list">
-        {{ if gt .currentPage 1 }}
-        <li><a href="?page=1" class="pagination-link">1</a></li>
-        {{ if gt .currentPage 2 }}
-        <li><span class="pagination-ellipsis">&hellip;</span></li>
-        {{ end }}
-        {{ end }}
-
-        <li>
-            <a href="?page={{ .currentPage }}" class="pagination-link is-current">
-                {{ .currentPage }}
-            </a>
-        </li>
-
-        {{ if lt .currentPage .totalPages }}
-        {{ if lt .currentPage (subtract .totalPages 1) }}
-        <li><span class="pagination-ellipsis">&hellip;</span></li>
-        {{ end }}
-        <li>
-            <a href="?page={{ .totalPages }}" class="pagination-link">
-                {{ .totalPages }}
-            </a>
-        </li>
-        {{ end }}
-    </ul>
-</nav>
-{{ end }}
-
+</div>
 {{ end }}

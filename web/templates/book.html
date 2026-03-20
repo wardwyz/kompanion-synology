@@ -1,98 +1,116 @@
 {{ define "title" }}{{ .book.Author }} - {{ .book.Title }} - 图书 - KOmpanion{{ end }}
 
 {{ define "content" }}
-{{ with .book }}
-<article class="edit-book-article">
-    <!-- 书籍封面 -->
-    <div class="cover">
-        <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
-    </div>
+<div class="page-stack">
+    {{ with .book }}
+    <section class="detail-card">
+        <div class="detail-header">
+            <p class="section-kicker">Book Detail</p>
+            <h1>{{ .Title }}</h1>
+            <p class="page-lead">在同一套书架风格下整理封面、元数据与下载操作。</p>
+        </div>
 
-    <!-- 编辑书籍元数据 -->
-    <div>
-        <form aria-labelledby="编辑图书" method="post">
-            <div class="grid">
-                <label>
-                    书名
-                    <input type="text" name="title" placeholder="请输入书名" required value="{{ if .Title }}{{ .Title }}{{ else }}未命名图书{{ end }}">
-                </label>
-                <label>
-                    作者
-                    <input type="text" name="author" placeholder="请输入作者" required value="{{ if .Author }}{{ .Author }}{{ else }}佚名{{ end }}">
-                </label>
+        <article class="edit-book-article">
+            <div class="cover">
+                <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
             </div>
 
-            <div class="grid">
-                <label>
-                    ISBN
-                    <input type="text" name="isbn" placeholder="请输入 ISBN" value="{{ if .ISBN }}{{ .ISBN }}{{ else }}未知{{ end }}">
-                </label>
-            </div>
+            <div class="detail-stack">
+                <div class="book-meta">
+                    <span class="meta-chip"><span class="meta-label">作者</span>{{ .Author }}</span>
+                    {{ if .Series }}
+                    <span class="meta-chip"><span class="meta-label">系列</span>{{ .Series }}{{ with .SeriesIndex }} #{{ .Decimal }}{{ end }}</span>
+                    {{ end }}
+                    {{ if .Year }}
+                    <span class="meta-chip"><span class="meta-label">年份</span>{{ .Year }}</span>
+                    {{ end }}
+                </div>
 
-            <div class="grid">
-                <label>
-                    系列
-                    <input type="text" name="series" placeholder="请输入系列名称" value="{{ if .Series }}{{ .Series }}{{ else }}未分类系列{{ end }}">
-                </label>
-                <label>
-                    系列序号
-                    <input type="number" name="series_index" placeholder="例如：1 或 1.5" step="0.1" min="0" value="{{ with .SeriesIndex }}{{ .Decimal }}{{ else }}1{{ end }}">
-                </label>
-            </div>
+                <form aria-labelledby="编辑图书" method="post" class="form-stack">
+                    <div class="info-grid">
+                        <label class="field-label">
+                            书名
+                            <input type="text" name="title" placeholder="请输入书名" required value="{{ if .Title }}{{ .Title }}{{ else }}未命名图书{{ end }}">
+                        </label>
+                        <label class="field-label">
+                            作者
+                            <input type="text" name="author" placeholder="请输入作者" required value="{{ if .Author }}{{ .Author }}{{ else }}佚名{{ end }}">
+                        </label>
+                    </div>
 
+                    <div class="info-grid">
+                        <label class="field-label">
+                            ISBN
+                            <input type="text" name="isbn" placeholder="请输入 ISBN" value="{{ if .ISBN }}{{ .ISBN }}{{ end }}">
+                        </label>
+                        <label class="field-label">
+                            出版社
+                            <input type="text" name="publisher" placeholder="请输入出版社" value="{{ if .Publisher }}{{ .Publisher }}{{ end }}">
+                        </label>
+                    </div>
+
+                    <div class="info-grid">
+                        <label class="field-label">
+                            系列
+                            <input type="text" name="series" placeholder="请输入系列名称" value="{{ if .Series }}{{ .Series }}{{ end }}">
+                        </label>
+                        <label class="field-label">
+                            系列序号
+                            <input type="number" name="series_index" placeholder="例如：1 或 1.5" step="0.1" min="0" value="{{ with .SeriesIndex }}{{ .Decimal }}{{ end }}">
+                        </label>
+                    </div>
+
+                    <div class="info-grid">
+                        <label class="field-label">
+                            出版年份
+                            <input type="number" name="year" placeholder="YYYY" min="1000" max="9999" value="{{ if .Year }}{{ .Year }}{{ end }}">
+                        </label>
+                    </div>
+
+                    <label class="field-label">
+                        简介
+                        <textarea name="description" id="description" rows="5" placeholder="请输入图书简介">{{ if .Description }}{{ .Description }}{{ end }}</textarea>
+                    </label>
+
+                    <div class="action-group">
+                        <button type="submit">保存修改</button>
+                        <a class="button-secondary" href="/books/{{.ID}}/download" target="_blank">下载图书</a>
+                    </div>
+                </form>
+            </div>
+        </article>
+    </section>
+    {{ end }}
+
+    {{ with $.stats }}
+    <section class="reading-stats">
+        <div class="section-header">
             <div>
-                <label for="description">简介</label>
-                <textarea name="description" id="description" rows="4" placeholder="请输入图书简介">{{ if .Description }}{{ .Description }}{{ else }}暂无简介{{ end }}</textarea>
+                <p class="section-kicker">Reading Insights</p>
+                <h2>阅读统计</h2>
+                <p class="section-intro">用统一信息卡快速了解阅读投入与节奏。</p>
             </div>
+        </div>
 
-            <div class="grid">
-                <label>
-                    出版年份
-                    <input type="number" name="year" placeholder="YYYY" min="1000" max="9999" value="{{ if .Year }}{{ .Year }}{{ else }}2000{{ end }}">
-                </label>
-                <label>
-                    出版社
-                    <input type="text" name="publisher" placeholder="请输入出版社" value="{{ if .Publisher }}{{ .Publisher }}{{ else }}未知出版社{{ end }}">
-                </label>
+        <div class="stats-grid">
+            <div class="metric-card">
+                <h3>已读页数</h3>
+                <p class="metric-value">{{ .TotalReadPages }}</p>
             </div>
-
-            <div class="grid">
-                <button type="submit" class="button success">保存</button>
-                <button type="button" class="button"><a href="/books/{{.ID}}/download" target="_blank">下载</a></button>
+            <div class="metric-card">
+                <h3>总阅读时长</h3>
+                <p class="metric-value">{{ formatDuration .TotalReadTime }}</p>
             </div>
-        </form>
-    </div>
-</article>
-{{ end }}
-
-{{ with $.stats }}
-<section class="reading-stats">
-    <hgroup>
-        <h3>阅读统计</h3>
-    </hgroup>
-
-    <table>
-        <tr>
-            <td style="width: 50%;">
-                <strong>已读页数</strong>
-                <p>{{ .TotalReadPages }}</p>
-            </td>
-            <td>
-                <strong>总阅读时长</strong>
-                <p>{{ formatDuration .TotalReadTime }}</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <strong>平均每页耗时</strong>
-                <p>{{ formatDuration .AverageTimePerPage }}</p>
-            </td>
-            <td>
-                <strong>阅读天数</strong>
-                <p>{{ .TotalReadDays }}</p>
-            </td>
-        </tr>
-    </table>
-</section>
-{{ end }}
+            <div class="metric-card">
+                <h3>平均每页耗时</h3>
+                <p class="metric-value">{{ formatDuration .AverageTimePerPage }}</p>
+            </div>
+            <div class="metric-card">
+                <h3>阅读天数</h3>
+                <p class="metric-value">{{ .TotalReadDays }}</p>
+            </div>
+        </div>
+    </section>
+    {{ end }}
+</div>
 {{ end }}

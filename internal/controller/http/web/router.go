@@ -30,6 +30,7 @@ func NewRouter(
 	shelf library.Shelf,
 	stats stats.ReadingStats,
 	version string,
+	zLibraryURL string,
 ) {
 	// Options
 	handler.MaxMultipartMemory = 512 << 20 // 512 MiB
@@ -94,7 +95,7 @@ func NewRouter(
 	// Product pages
 	bookGroup := handler.Group("/books")
 	bookGroup.Use(authMiddleware(a))
-	newBooksRoutes(bookGroup, shelf, stats, p, l)
+	newBooksRoutes(bookGroup, shelf, stats, p, l, zLibraryURL)
 
 	// Stats pages
 	statsGroup := handler.Group("/stats")

@@ -59,6 +59,7 @@ services:
       KOMPANION_PG_URL: "postgres://XXX:XXX@postgres:5432/postgres"
       KOMPANION_AUTH_USERNAME: XXX
       KOMPANION_AUTH_PASSWORD: XXX
+      KOMPANION_ZLIBRARY_URL: https://zh.z-lib.gl  # 可按需替换
     depends_on:
       - postgres
 ```

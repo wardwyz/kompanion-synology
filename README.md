@@ -1,8 +1,7 @@
-# 群晖docker发布。请关注原作者
+# docker发布。请关注原作者
 https://github.com/vanadium23/kompanion
 1. 汉化
-2. 优化大文件上传空白页
-3. 增加删除功能、opds书籍封面及分类
+2. 增加删除功能、opds书籍分类
 
 ## 主要功能：
 - 上传图书并查看书架

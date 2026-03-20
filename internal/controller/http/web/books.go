@@ -1,18 +1,10 @@
 package web
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io"
-	"mime"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vanadium23/kompanion/internal/entity"
@@ -23,29 +15,22 @@ import (
 )
 
 type booksRoutes struct {
-	shelf       library.Shelf
-	stats       stats.ReadingStats
-	progress    syncpkg.Progress
-	logger      logger.Interface
-	httpClient  *http.Client
-	zLibraryURL string
+	shelf    library.Shelf
+	stats    stats.ReadingStats
+	progress syncpkg.Progress
+	logger   logger.Interface
 }
 
-func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, l logger.Interface, zLibraryURL string) {
+func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, l logger.Interface) {
 	r := &booksRoutes{
-		shelf:       shelf,
-		stats:       stats,
-		progress:    progress,
-		logger:      l,
-		zLibraryURL: zLibraryURL,
-		httpClient: &http.Client{
-			Timeout: 10 * time.Minute,
-		},
+		shelf:    shelf,
+		stats:    stats,
+		progress: progress,
+		logger:   l,
 	}
 
 	handler.GET("/", r.listBooks)
 	handler.POST("/upload", r.uploadBook)
-	handler.POST("/upload-url", r.uploadBookFromURL)
 	handler.GET("/:bookID", r.viewBook)
 	handler.POST("/:bookID", r.updateBookMetadata)
 	handler.POST("/:bookID/delete", r.deleteBook)
@@ -54,7 +39,7 @@ func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.R
 }
 
 func (r *booksRoutes) listBooks(c *gin.Context) {
-	renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusOK, gin.H{})
+	renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusOK, gin.H{})
 }
 
 func renderBooksPage(
@@ -62,7 +47,6 @@ func renderBooksPage(
 	shelf library.Shelf,
 	progressSync syncpkg.Progress,
 	log logger.Interface,
-	zLibraryURL string,
 	status int,
 	data gin.H,
 ) {
@@ -99,8 +83,7 @@ func renderBooksPage(
 	}
 
 	pageData := gin.H{
-		"books":       booksWithProgress,
-		"zLibraryURL": zLibraryURL,
+		"books": booksWithProgress,
 		"pagination": gin.H{
 			"currentPage": page,
 			"perPage":     perPage,
@@ -126,7 +109,7 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	uploadedBookFile, err := c.FormFile("book")
 	if err != nil {
 		r.logger.Error(err, "http - v1 - shelf - uploadBook")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusBadRequest, gin.H{
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
 			"uploadError": "请选择要上传的书籍文件。",
 		})
 		return
@@ -136,7 +119,7 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	tempFile, err := os.CreateTemp("", "")
 	if err != nil {
 		r.logger.Error(err, "http - v1 - shelf - putBook")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusInternalServerError, gin.H{
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusInternalServerError, gin.H{
 			"uploadError": "服务器暂时无法创建上传临时文件，请稍后重试。",
 		})
 		return
@@ -146,7 +129,7 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	defer tempFile.Close()
 	if err := c.SaveUploadedFile(uploadedBookFile, filepath); err != nil {
 		r.logger.Error(err, "http - web - shelf - saveUploadedFile")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusBadRequest, gin.H{
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
 			"uploadError": "上传文件失败，请确认文件大小和网络连接后重试。",
 		})
 		return
@@ -155,124 +138,12 @@ func (r *booksRoutes) uploadBook(c *gin.Context) {
 	book, err := r.shelf.StoreBook(c.Request.Context(), tempFile, uploadedBookFile.Filename)
 	if err != nil && err != entity.ErrBookAlreadyExists {
 		r.logger.Error(err, "http - v1 - shelf - putBook")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusBadRequest, gin.H{
+		renderBooksPage(c, r.shelf, r.progress, r.logger, http.StatusBadRequest, gin.H{
 			"uploadError": "文件上传成功，但解析失败。请确认上传的是支持的电子书格式（EPUB/PDF/FB2）。",
 		})
 		return
 	}
 	c.Redirect(302, "/books/"+book.ID)
-}
-
-func (r *booksRoutes) uploadBookFromURL(c *gin.Context) {
-	remoteURL := strings.TrimSpace(c.PostForm("url"))
-	if remoteURL == "" {
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusBadRequest, gin.H{
-			"remoteUploadError": "请输入可直接下载电子书文件的链接。",
-		})
-		return
-	}
-
-	book, err := r.fetchAndStoreRemoteBook(c.Request.Context(), remoteURL)
-	if err != nil {
-		r.logger.Error(err, "http - web - shelf - uploadBookFromURL")
-		renderBooksPage(c, r.shelf, r.progress, r.logger, r.zLibraryURL, http.StatusBadRequest, gin.H{
-			"remoteUploadError": err.Error(),
-			"remoteUploadURL":   remoteURL,
-		})
-		return
-	}
-
-	c.Redirect(302, "/books/"+book.ID)
-}
-
-func (r *booksRoutes) fetchAndStoreRemoteBook(ctx context.Context, remoteURL string) (entity.Book, error) {
-	parsedURL, err := url.Parse(remoteURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return entity.Book{}, errors.New("下载链接格式不正确，请粘贴完整的 http(s) 链接")
-	}
-	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return entity.Book{}, errors.New("仅支持 http 或 https 下载链接")
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, remoteURL, nil)
-	if err != nil {
-		return entity.Book{}, errors.New("无法创建远程下载请求")
-	}
-	req.Header.Set("User-Agent", "KOmpanion/remote-import")
-
-	resp, err := r.httpClient.Do(req)
-	if err != nil {
-		return entity.Book{}, errors.New("无法访问远程下载链接，请确认链接有效并且服务器可访问")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return entity.Book{}, fmt.Errorf("远程站点返回了 %d，无法直接下载文件", resp.StatusCode)
-	}
-
-	filename := remoteFilename(resp, parsedURL)
-	if !isSupportedBookFilename(filename) {
-		return entity.Book{}, errors.New("远程链接不是支持的电子书文件（仅支持 EPUB/PDF/FB2）")
-	}
-
-	tempFile, err := os.CreateTemp("", "kompanion-remote-*")
-	if err != nil {
-		return entity.Book{}, errors.New("服务器暂时无法创建下载临时文件")
-	}
-	defer os.Remove(tempFile.Name())
-	defer tempFile.Close()
-
-	if _, err := io.Copy(tempFile, resp.Body); err != nil {
-		return entity.Book{}, errors.New("远程文件下载到服务器时失败，请稍后重试")
-	}
-	if _, err := tempFile.Seek(0, 0); err != nil {
-		return entity.Book{}, errors.New("服务器处理远程文件时失败")
-	}
-
-	book, err := r.shelf.StoreBook(ctx, tempFile, filename)
-	if err != nil {
-		if errors.Is(err, entity.ErrBookAlreadyExists) {
-			return book, nil
-		}
-		return entity.Book{}, errors.New("远程文件已下载，但解析失败。请确认它是 EPUB/PDF/FB2 格式")
-	}
-
-	return book, nil
-}
-
-func remoteFilename(resp *http.Response, sourceURL *url.URL) string {
-	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
-		if _, params, err := mime.ParseMediaType(cd); err == nil {
-			if filename := strings.TrimSpace(params["filename*"]); filename != "" {
-				if idx := strings.Index(filename, "''"); idx >= 0 {
-					filename = filename[idx+2:]
-				}
-				if unescaped, err := url.QueryUnescape(filename); err == nil {
-					return path.Base(unescaped)
-				}
-				return path.Base(filename)
-			}
-			if filename := strings.TrimSpace(params["filename"]); filename != "" {
-				return path.Base(filename)
-			}
-		}
-	}
-
-	name := path.Base(sourceURL.Path)
-	if name == "." || name == "/" || name == "" {
-		return "downloaded-book"
-	}
-	return name
-}
-
-func isSupportedBookFilename(filename string) bool {
-	ext := strings.ToLower(path.Ext(filename))
-	switch ext {
-	case ".epub", ".pdf", ".fb2":
-		return true
-	default:
-		return false
-	}
 }
 
 func (r *booksRoutes) downloadBook(c *gin.Context) {

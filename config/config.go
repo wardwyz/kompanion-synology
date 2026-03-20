@@ -16,7 +16,6 @@ type (
 		Log
 		PG
 		BookStorage
-		Integrations
 	}
 
 	// App -.
@@ -52,10 +51,6 @@ type (
 		Type string
 		Path string
 	}
-
-	Integrations struct {
-		ZLibraryURL string
-	}
 )
 
 // NewConfig - reads from env, validates and returns the config.
@@ -85,19 +80,16 @@ func NewConfig(version string) (*Config, error) {
 		return nil, err
 	}
 
-	integrations := readIntegrationsConfig()
-
 	return &Config{
 		App: App{
 			Name:    "kompanion",
 			Version: version,
 		},
-		Auth:         auth,
-		HTTP:         http,
-		Log:          log,
-		PG:           postgres,
-		BookStorage:  bookStorage,
-		Integrations: integrations,
+		Auth:        auth,
+		HTTP:        http,
+		Log:         log,
+		PG:          postgres,
+		BookStorage: bookStorage,
 	}, nil
 }
 
@@ -177,17 +169,6 @@ func readBookStorageConfig() (BookStorage, error) {
 		Type: bstorage_type,
 		Path: bstorage_path,
 	}, nil
-}
-
-func readIntegrationsConfig() Integrations {
-	zLibraryURL := readPrefixedEnv("ZLIBRARY_URL")
-	if zLibraryURL == "" {
-		zLibraryURL = "https://zh.z-lib.gl"
-	}
-
-	return Integrations{
-		ZLibraryURL: zLibraryURL,
-	}
 }
 
 func readPrefixedEnv(key string) string {

@@ -1,51 +1,48 @@
-{{ define "title" }}{{ .book.Author }} - {{ .book.Title }} - 书籍 - KOmpanion{{ end }}
+{{ define "title" }}{{ .book.Author }} - {{ .book.Title }} - 图书 - KOmpanion{{ end }}
 
 {{ define "content" }}
 {{ with .book }}
 <article class="edit-book-article">
-
     <!-- 书籍封面 -->
     <div class="cover">
         <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
     </div>
 
-    <!-- 编辑书籍信息 -->
+    <!-- 编辑书籍元数据 -->
     <div>
-        <form aria-labelledby="编辑书籍" method="post">
+        <form aria-labelledby="编辑图书" method="post">
             <div class="grid">
                 <label>
                     书名
-                    <input type="text" name="title" placeholder="请输入书名" required value="{{ .Title }}">
+                    <input type="text" name="title" placeholder="请输入书名" required value="{{ if .Title }}{{ .Title }}{{ else }}未命名图书{{ end }}">
                 </label>
                 <label>
                     作者
-                    <input type="text" name="author" placeholder="请输入作者" required value="{{ .Author }}">
+                    <input type="text" name="author" placeholder="请输入作者" required value="{{ if .Author }}{{ .Author }}{{ else }}佚名{{ end }}">
                 </label>
             </div>
 
             <div class="grid">
                 <label>
                     ISBN
-                    <input type="text" name="isbn" placeholder="请输入 ISBN" value="{{ .ISBN }}">
+                    <input type="text" name="isbn" placeholder="请输入 ISBN" value="{{ if .ISBN }}{{ .ISBN }}{{ else }}未知{{ end }}">
                 </label>
             </div>
 
             <div class="grid">
                 <label>
                     系列
-                    <input type="text" name="series" placeholder="请输入系列名称" value="{{ if .Series }}{{ .Series }}{{ else }}文学{{ end }}">
+                    <input type="text" name="series" placeholder="请输入系列名称" value="{{ if .Series }}{{ .Series }}{{ else }}未分类系列{{ end }}">
                 </label>
                 <label>
                     系列序号
-                    <input type="number" name="series_index" placeholder="如：1 或 1.5" step="0.1" min="0"
-                        value="{{ with .SeriesIndex }}{{ .Decimal }}{{ else }}0.1{{ end }}">
+                    <input type="number" name="series_index" placeholder="例如：1 或 1.5" step="0.1" min="0" value="{{ with .SeriesIndex }}{{ .Decimal }}{{ else }}1{{ end }}">
                 </label>
             </div>
 
             <div>
                 <label for="description">简介</label>
-                <textarea name="description" id="description" rows="4"
-                    placeholder="请输入书籍简介">{{ .Description }}</textarea>
+                <textarea name="description" id="description" rows="4" placeholder="请输入图书简介">{{ if .Description }}{{ .Description }}{{ else }}暂无简介{{ end }}</textarea>
             </div>
 
             <div class="grid">
@@ -55,23 +52,19 @@
                 </label>
                 <label>
                     出版社
-                    <input type="text" name="publisher" placeholder="请输入出版社" value="{{ if .Publisher }}{{ .Publisher }}{{ else }}未知{{ end }}">
+                    <input type="text" name="publisher" placeholder="请输入出版社" value="{{ if .Publisher }}{{ .Publisher }}{{ else }}未知出版社{{ end }}">
                 </label>
             </div>
 
-            <div class="book-actions">
-                <button type="submit" class="button success book-action-button">保存</button>
-
-                <a href="/books/{{.ID}}/download" target="_blank" class="button book-action-button">下载</a>
-
+            <div class="grid">
+                <button type="submit" class="button success">保存</button>
+                <button type="button" class="button"><a href="/books/{{.ID}}/download" target="_blank">下载</a></button>
             </div>
         </form>
     </div>
-
 </article>
 {{ end }}
 
-<!-- 阅读统计 -->
 {{ with $.stats }}
 <section class="reading-stats">
     <hgroup>
@@ -81,17 +74,17 @@
     <table>
         <tr>
             <td style="width: 50%;">
-                <strong>阅读页数</strong>
+                <strong>已读页数</strong>
                 <p>{{ .TotalReadPages }}</p>
             </td>
             <td>
-                <strong>总用时</strong>
+                <strong>总阅读时长</strong>
                 <p>{{ formatDuration .TotalReadTime }}</p>
             </td>
         </tr>
         <tr>
             <td>
-                <strong>平均每页用时</strong>
+                <strong>平均每页耗时</strong>
                 <p>{{ formatDuration .AverageTimePerPage }}</p>
             </td>
             <td>
@@ -102,5 +95,4 @@
     </table>
 </section>
 {{ end }}
-
 {{ end }}

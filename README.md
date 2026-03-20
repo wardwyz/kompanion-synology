@@ -3,7 +3,6 @@ https://github.com/vanadium23/kompanion
 1. 汉化
 2. 优化大文件上传空白页
 3. 增加删除功能、opds书籍封面及分类
-4. 接入zlibrary书库下载
 
 ## 主要功能：
 - 上传图书并查看书架
@@ -60,7 +59,6 @@ services:
       KOMPANION_PG_URL: "postgres://XXX:XXX@postgres:5432/postgres"
       KOMPANION_AUTH_USERNAME: XXX
       KOMPANION_AUTH_PASSWORD: XXX
-      KOMPANION_ZLIBRARY_URL: https://zh.z-lib.gl  # 可按需替换
     depends_on:
       - postgres
 ```

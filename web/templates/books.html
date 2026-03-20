@@ -13,25 +13,6 @@
     {{ end }}
 </div>
 
-<div style="margin-top: 1rem; padding: 1rem; border: 1px solid var(--table-border-color); border-radius: 8px;">
-    <h3 style="margin-top: 0;">Z-Library / 远程链接导入</h3>
-    <p style="margin-bottom: 0.75rem; color: var(--text-color-alt);">
-        可先打开 Z-Library 查书并获取最终的下载链接，再把该链接粘贴到下面，服务器会自动下载并导入到 KOmpanion。
-        由于浏览器跨站限制，第三方站点的“下载”按钮无法直接自动触发本站上传。
-    </p>
-    <p style="margin-bottom: 0.75rem;">
-        <a href="{{ .zLibraryURL }}" target="_blank" rel="noopener noreferrer">打开 Z-Library</a>
-    </p>
-    <form method="post" action="/books/upload-url" class="grid">
-        <div>
-            <input type="url" name="url" placeholder="粘贴可直接下载 .epub / .pdf / .fb2 文件的链接" value="{{ .remoteUploadURL }}" required>
-        </div>
-        <button style="flex-grow: 1;">从链接导入</button>
-    </form>
-    {{ if .remoteUploadError }}
-    <p class="help is-danger" style="margin-top: 0.75rem; color: #d33;">{{ .remoteUploadError }}</p>
-    {{ end }}
-</div>
 
 <section>
     {{ range .books }}

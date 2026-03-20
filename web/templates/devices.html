@@ -1,28 +1,52 @@
-{{define "content"}}
-<main>
-    <header>
-        <h1>设备管理</h1>
-    </header>
+{{ define "title" }}设备管理 - KOmpanion{{ end }}
 
-    {{if .error}}
-    <blockquote class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-        <p>{{.error}}</p>
-    </blockquote>
-    {{end}}
-
-    <!-- 添加设备 -->
-    <section>
-        <h2>添加新设备</h2>
-        <form action="/devices/add" method="POST" class="grid">
-            <input type="text" name="name" required placeholder="请输入设备名称">
-            <input type="text" name="password" required placeholder="请输入设备密码">
-            <button type="submit">添加设备</button>
-        </form>
+{{ define "content" }}
+<div class="stack">
+    <section class="page-hero">
+        <div>
+            <h1 class="page-title">设备管理</h1>
+            <p class="page-subtitle">管理 KOReader / Readest 等客户端设备的访问凭证与同步权限。</p>
+        </div>
     </section>
 
-    <!-- 设备列表 -->
-    <section>
-        <h2>已添加设备</h2>
+    {{if .error}}
+    <div class="alert">{{.error}}</div>
+    {{end}}
+
+    <section class="panel-grid">
+        <article class="page-card stack">
+            <header>
+                <h2>添加新设备</h2>
+                <p class="help-text">为每台阅读设备设置单独账号，方便独立同步与停用。</p>
+            </header>
+            <form action="/devices/add" method="POST" class="stack">
+                <div class="grid">
+                    <input type="text" name="device_name" required placeholder="请输入设备名称">
+                    <input type="text" name="password" required placeholder="请输入设备密码">
+                </div>
+                <div class="form-actions">
+                    <button type="submit">添加设备</button>
+                </div>
+            </form>
+        </article>
+
+        <article class="page-card stack">
+            <header>
+                <h2>使用建议</h2>
+            </header>
+            <div class="info-list">
+                <div class="info-row"><span>按设备单独创建账号</span><strong>更易排查同步问题</strong></div>
+                <div class="info-row"><span>定期更换密码</span><strong>更安全</strong></div>
+                <div class="info-row"><span>设备停用后</span><strong>立即失去登录能力</strong></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="table-card">
+        <header>
+            <h2>已添加设备</h2>
+            <p class="help-text">这里会显示当前可用设备及停用操作。</p>
+        </header>
 
         {{if .devices}}
         <table>
@@ -37,25 +61,20 @@
                 <tr>
                     <td>{{.Name}}</td>
                     <td>
-
-                        <!-- 停用 -->
-                        <form action="/devices/deactivate/{{.Name}}" method="POST" style="display:inline;">
-                            <button type="submit"
-                                onclick="return confirm('确定要停用该设备吗？')">
-                                停用
-                            </button>
+                        <form action="/devices/deactivate/{{.Name}}" method="POST" style="margin:0;" onsubmit="return confirm('确定要停用该设备吗？');">
+                            <button type="submit" class="danger">停用</button>
                         </form>
-
                     </td>
                 </tr>
                 {{end}}
             </tbody>
         </table>
-
         {{else}}
-        <p><em>暂无设备</em></p>
+        <div class="empty-state">
+            <h3>暂无设备</h3>
+            <p class="muted">先添加一台设备，之后就能在阅读器中使用它进行同步。</p>
+        </div>
         {{end}}
     </section>
-</main>
-
+</div>
 {{end}}

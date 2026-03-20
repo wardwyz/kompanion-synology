@@ -11,38 +11,40 @@
 </head>
 
 <body>
+    <div class="app-shell">
+        <header class="topbar">
+            <a href="/books/" class="brand">
+                <span class="brand-mark">K</span>
+                <span class="brand-copy">
+                    <strong>KOmpanion</strong>
+                    <span>更简洁的电子书与阅读同步中心</span>
+                </span>
+            </a>
 
-    <!-- 主站头部 -->
-    <header class="header">
-        <table>
-            <tr>
-                <td style="flex-grow: 1;">KOmpanion</td>
+            <nav class="topnav" aria-label="主导航">
                 {{ if .isAuthenticated }}
-                <td><a href="/books/">> 书籍</a></td>
-                <td><a href="/stats/">> 统计</a></td>
-                <td><a href="/devices/">> 设备</a></td>
-                <td><a href="/auth/logout/">退出登录</a></td>
+                <a href="/books/">书籍</a>
+                <a href="/stats/">统计</a>
+                <a href="/devices/">设备</a>
+                <a href="/auth/logout/">退出登录</a>
                 {{ else }}
-                <td>登录页面</td>
-                {{ end}}
-            </tr>
-        </table>
-    </header>
+                <a href="/auth/login">登录</a>
+                {{ end }}
+            </nav>
+        </header>
 
-    <main>
-        {{ block "content" . }}默认内容{{ end }}
-    </main>
+        <main>
+            {{ block "content" . }}默认内容{{ end }}
+        </main>
 
-    <footer>
-        <!-- 简单页脚 -->
-        <hr>
-        <p style="text-align: center; color: var(--text-color-alt);">
-            由 <a href="https://github.com/vanadium23/kompanion/">KOmpanion</a> 驱动，
-            版本：<strong>{{ Version }}</strong>，
-            页面耗时：<strong>{{ LoadTimes .startTime }}</strong>
-        </p>
-    </footer>
-
+        <footer class="footer">
+            <div class="footer-card">
+                由 <a href="https://github.com/vanadium23/kompanion/">KOmpanion</a> 驱动，
+                版本：<strong>{{ Version }}</strong>，
+                页面耗时：<strong>{{ LoadTimes .startTime }}</strong>
+            </div>
+        </footer>
+    </div>
 </body>
 
 </html>

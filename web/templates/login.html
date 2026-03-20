@@ -1,25 +1,32 @@
 {{ define "title" }}登录 - KOmpanion{{ end }}
 
 {{ define "content" }}
-<form class="auth-form" method="post">
+<section class="auth-layout">
+    <div class="auth-card stack">
+        <header>
+            <h1 class="page-title">欢迎回来</h1>
+            <p class="page-subtitle">登录后即可管理书库、设备同步和阅读统计。</p>
+        </header>
 
-    {{if .error}}
-    <div class="error-message">
-        {{.error}}
+        {{if .error}}
+        <div class="alert">{{.error}}</div>
+        {{end}}
+
+        <form class="stack" method="post">
+            <label class="form-field" for="username">
+                <span>用户名</span>
+                <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+            </label>
+
+            <label class="form-field" for="password">
+                <span>密码</span>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </label>
+
+            <div class="form-actions">
+                <button type="submit">登录</button>
+            </div>
+        </form>
     </div>
-    {{end}}
-
-    <div>
-        <label for="username">用户名</label>
-        <input type="text" id="username" name="username" placeholder="请输入用户名" required>
-    </div>
-
-    <div class="form-group">
-        <label for="password">密码</label>
-        <input type="password" id="password" name="password" placeholder="请输入密码" required>
-    </div>
-
-    <button type="submit" class="btn-primary">登录</button>
-
-</form>
+</section>
 {{ end }}

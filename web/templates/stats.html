@@ -1,22 +1,44 @@
 {{ define "title" }}阅读统计 - KOmpanion{{ end }}
 
 {{ define "content" }}
-<article>
-    <header>
-        <h1>阅读统计</h1>
-    </header>
+<div class="stack">
+    <section class="page-hero">
+        <div>
+            <h1 class="page-title">阅读统计</h1>
+            <p class="page-subtitle">通过时间范围筛选，查看阅读页数、时长和每日阅读趋势。</p>
+        </div>
+    </section>
 
-    <!-- 时间筛选 -->
-    <section>
+    <section class="filter-card stack">
+        <header>
+            <h2>时间筛选</h2>
+        </header>
         <form method="GET" action="/stats" class="grid">
             <input type="date" id="from" name="from" value="{{ .from }}">
             <input type="date" id="to" name="to" value="{{ .to }}">
-            <button type="submit" style="flex-grow: 1;">查询</button>
+            <button type="submit">查询统计</button>
         </form>
     </section>
 
-    <!-- 统计表 -->
-    <section>
+    <section class="stats-grid">
+        <article class="stats-card">
+            <div class="stat-label">总阅读页数</div>
+            <div class="stat-value">{{ .stats.TotalReadPages }}</div>
+        </article>
+        <article class="stats-card">
+            <div class="stat-label">总阅读时长</div>
+            <div class="stat-value">{{ formatDuration .stats.TotalReadTime }}</div>
+        </article>
+        <article class="stats-card">
+            <div class="stat-label">平均页数 / 天</div>
+            <div class="stat-value">{{ .stats.AveragePagePerDay }}</div>
+        </article>
+    </section>
+
+    <section class="table-card">
+        <header>
+            <h2>书籍明细</h2>
+        </header>
         <table>
             <thead>
                 <tr>
@@ -40,19 +62,18 @@
                     <td><strong>总计</strong></td>
                     <td><strong>{{ .stats.TotalReadPages }}</strong></td>
                     <td><strong>{{ formatDuration .stats.TotalReadTime }}</strong></td>
-                    <td>
-                        <strong>{{ .stats.AveragePagePerDay }} 页/天</strong>
-                    </td>
+                    <td><strong>{{ .stats.AveragePagePerDay }} 页/天</strong></td>
                 </tr>
             </tbody>
         </table>
     </section>
 
-    <!-- 图表 -->
-    <section>
-        <h2>每日阅读趋势</h2>
-        <img src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计"
-            style="width: 100%; max-width: 800px;">
+    <section class="chart-card stack">
+        <header>
+            <h2>每日阅读趋势</h2>
+            <p class="help-text">图表展示的是每日阅读页数与平均每页耗时。</p>
+        </header>
+        <img class="chart-image" src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计">
     </section>
-</article>
+</div>
 {{ end }}

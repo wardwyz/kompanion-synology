@@ -48,6 +48,13 @@
         </div>
     </section>
 
+    <!-- 图表 -->
+    <section>
+        <h2>每日阅读趋势</h2>
+        <img src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计"
+            style="width: 100%; max-width: 800px;">
+    </section>
+
     <!-- 每日明细 -->
     <section>
         <h2>每日阅读明细（最近一周）</h2>
@@ -116,13 +123,6 @@
                 </tr>
             </tbody>
         </table>
-    </section>
-
-    <!-- 图表 -->
-    <section>
-        <h2>每日阅读趋势</h2>
-        <img src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计"
-            style="width: 100%; max-width: 800px;">
     </section>
 </article>
 {{ end }}

@@ -2,6 +2,21 @@
 
 {{ define "content" }}
 <article>
+    <style>
+        .stats-overview-grid .overview-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 8rem;
+        }
+
+        .stats-overview-grid .overview-value {
+            font-size: 1.4rem;
+            margin: 0;
+            line-height: 1.3;
+        }
+    </style>
+
     <header>
         <h1>阅读统计</h1>
     </header>
@@ -17,25 +32,32 @@
 
     <!-- 总览 -->
     <section>
-        <div class="grid">
-            <article>
+        <div class="grid stats-overview-grid">
+            <article class="overview-card">
                 <header><strong>总阅读书籍</strong></header>
-                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
+                <p class="overview-value"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
             </article>
-            <article>
+            <article class="overview-card">
                 <header><strong>总阅读页数</strong></header>
-                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
+                <p class="overview-value"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
             </article>
-            <article>
+            <article class="overview-card">
                 <header><strong>总阅读时长</strong></header>
-                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
+                <p class="overview-value"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
             </article>
         </div>
     </section>
 
+    <!-- 图表 -->
+    <section>
+        <h2>每日阅读趋势</h2>
+        <img src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计"
+            style="width: 100%; max-width: 800px;">
+    </section>
+
     <!-- 每日明细 -->
     <section>
-        <h2>每日阅读明细</h2>
+        <h2>每日阅读明细（最近一周）</h2>
         {{ if .stats.DailyStats }}
         {{ range .stats.DailyStats }}
         <article>
@@ -101,13 +123,6 @@
                 </tr>
             </tbody>
         </table>
-    </section>
-
-    <!-- 图表 -->
-    <section>
-        <h2>每日阅读趋势</h2>
-        <img src="/stats/chart?from={{ .from }}&to={{ .to }}" alt="每日阅读统计"
-            style="width: 100%; max-width: 800px;">
     </section>
 </article>
 {{ end }}

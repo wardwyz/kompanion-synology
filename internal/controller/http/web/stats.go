@@ -48,7 +48,6 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 	graph := charts.Chart{
 		Title: "每日阅读趋势",
 		TitleStyle: charts.Style{
-			Show:      true,
 			FontSize:  14,
 			FontColor: charts.ColorBlack,
 		},
@@ -89,7 +88,6 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			charts.ContinuousSeries{
 				Name: "阅读页数",
 				Style: charts.Style{
-					Show:        true,
 					FillColor:   charts.GetDefaultColor(0).WithAlpha(180),
 					StrokeColor: charts.GetDefaultColor(0),
 					StrokeWidth: 2,
@@ -102,7 +100,6 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			charts.ContinuousSeries{
 				Name: "单页阅读时长",
 				Style: charts.Style{
-					Show:        true,
 					StrokeColor: charts.GetDefaultColor(1),
 					StrokeWidth: 2,
 					DotColor:    charts.GetDefaultColor(1),

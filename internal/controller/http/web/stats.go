@@ -46,7 +46,7 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 
 	// Create the chart
 	graph := charts.Chart{
-		Title: "每日阅读趋势",
+		Title: "Daily Reading Trend",
 		TitleStyle: charts.Style{
 			FontSize:  14,
 			FontColor: charts.ColorBlack,
@@ -60,7 +60,7 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			},
 		},
 		XAxis: charts.XAxis{
-			Name: "日期",
+			Name: "Date",
 			ValueFormatter: func(v interface{}) string {
 				if ts, ok := v.(float64); ok {
 					return time.Unix(int64(ts), 0).Format("01-02")
@@ -69,7 +69,7 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			},
 		},
 		YAxis: charts.YAxis{
-			Name: "阅读页数（页）",
+			Name: "Pages Read",
 			ValueFormatter: func(v interface{}) string {
 				if value, ok := v.(float64); ok {
 					return fmt.Sprintf("%d", int(value))
@@ -86,7 +86,7 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 		},
 		Series: []charts.Series{
 			charts.ContinuousSeries{
-				Name: "阅读页数",
+				Name: "Pages Read",
 				Style: charts.Style{
 					FillColor:   charts.GetDefaultColor(0).WithAlpha(180),
 					StrokeColor: charts.GetDefaultColor(0),
@@ -98,7 +98,7 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 				YValues: yPagesValues,
 			},
 			charts.ContinuousSeries{
-				Name: "单页阅读时长",
+				Name: "Avg Time / Page",
 				Style: charts.Style{
 					StrokeColor: charts.GetDefaultColor(1),
 					StrokeWidth: 2,
@@ -111,10 +111,10 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			},
 		},
 		YAxisSecondary: charts.YAxis{
-			Name: "单页时长（秒）",
+			Name: "Seconds / Page",
 			ValueFormatter: func(v interface{}) string {
 				if value, ok := v.(float64); ok {
-					return fmt.Sprintf("%.1f秒", value)
+					return fmt.Sprintf("%.1fs", value)
 				}
 				return ""
 			},

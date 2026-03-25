@@ -37,10 +37,20 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 	// Add 10% padding to max values
 	maxPages = maxPages * 1.1
 	maxDuration = maxDuration * 1.1
+	if maxPages == 0 {
+		maxPages = 10
+	}
+	if maxDuration == 0 {
+		maxDuration = 1
+	}
 
 	// Create the chart
 	graph := charts.Chart{
-		Title: "",
+		Title: "每日阅读趋势",
+		TitleStyle: charts.Style{
+			FontSize:  14,
+			FontColor: charts.ColorBlack,
+		},
 		Background: charts.Style{
 			Padding: charts.Box{
 				Top:    20,
@@ -50,15 +60,16 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			},
 		},
 		XAxis: charts.XAxis{
+			Name: "日期",
 			ValueFormatter: func(v interface{}) string {
 				if ts, ok := v.(float64); ok {
-					return time.Unix(int64(ts), 0).Format("2006-01-02")
+					return time.Unix(int64(ts), 0).Format("01-02")
 				}
 				return ""
 			},
 		},
 		YAxis: charts.YAxis{
-			Name: "Pages Read",
+			Name: "阅读页数（页）",
 			ValueFormatter: func(v interface{}) string {
 				if value, ok := v.(float64); ok {
 					return fmt.Sprintf("%d", int(value))
@@ -75,20 +86,24 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 		},
 		Series: []charts.Series{
 			charts.ContinuousSeries{
-				Name: "Pages Read",
+				Name: "阅读页数",
 				Style: charts.Style{
 					FillColor:   charts.GetDefaultColor(0).WithAlpha(180),
 					StrokeColor: charts.GetDefaultColor(0),
-					StrokeWidth: 1,
+					StrokeWidth: 2,
+					DotColor:    charts.GetDefaultColor(0),
+					DotWidth:    3,
 				},
 				XValues: xValues,
 				YValues: yPagesValues,
 			},
 			charts.ContinuousSeries{
-				Name: "Average Time per Page",
+				Name: "单页阅读时长",
 				Style: charts.Style{
 					StrokeColor: charts.GetDefaultColor(1),
 					StrokeWidth: 2,
+					DotColor:    charts.GetDefaultColor(1),
+					DotWidth:    3,
 				},
 				XValues: xValues,
 				YValues: yDurationValues,
@@ -96,10 +111,10 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 			},
 		},
 		YAxisSecondary: charts.YAxis{
-			Name: "Seconds per Page",
+			Name: "单页时长（秒）",
 			ValueFormatter: func(v interface{}) string {
 				if value, ok := v.(float64); ok {
-					return fmt.Sprintf("%.1fs", value)
+					return fmt.Sprintf("%.1f秒", value)
 				}
 				return ""
 			},
@@ -111,8 +126,11 @@ func generateDailyStatsChart(stats []stats.DailyStats) ([]byte, error) {
 				FontColor: chart.GetDefaultColor(1),
 			},
 		},
-		Width:  800,
-		Height: 400,
+		Width:  900,
+		Height: 420,
+	}
+	graph.Elements = []chart.Renderable{
+		chart.Legend(&graph),
 	}
 
 	buffer := &bytes.Buffer{}

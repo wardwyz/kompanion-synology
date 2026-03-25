@@ -1,12 +1,10 @@
 package web
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/vanadium23/kompanion/internal/entity"
@@ -54,7 +52,6 @@ func renderBooksPage(
 ) {
 	page := 1
 	perPage := 12 // Show 12 books per page for grid layout
-	searchQuery := strings.TrimSpace(c.Query("q"))
 
 	if pageStr := c.Query("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -67,22 +64,10 @@ func renderBooksPage(
 		err   error
 	)
 
-	if searchQuery == "" {
-		books, err = shelf.ListBooks(c.Request.Context(), "created_at", "desc", page, perPage)
-		if err != nil {
-			c.HTML(500, "error", passStandartContext(c, gin.H{"error": err.Error()}))
-			return
-		}
-	} else {
-		var allBooks []entity.Book
-		allBooks, err = listAllBooks(c.Request.Context(), shelf, 200)
-		if err != nil {
-			c.HTML(500, "error", passStandartContext(c, gin.H{"error": err.Error()}))
-			return
-		}
-
-		filteredBooks := filterBooksByQuery(allBooks, searchQuery)
-		books, page = paginateBooks(filteredBooks, page, perPage)
+	books, err = shelf.ListBooks(c.Request.Context(), "created_at", "desc", page, perPage)
+	if err != nil {
+		c.HTML(500, "error", passStandartContext(c, gin.H{"error": err.Error()}))
+		return
 	}
 
 	// Fetch progress for each book
@@ -104,8 +89,7 @@ func renderBooksPage(
 	}
 
 	pageData := gin.H{
-		"books":       booksWithProgress,
-		"searchQuery": searchQuery,
+		"books": booksWithProgress,
 		"pagination": gin.H{
 			"currentPage": page,
 			"perPage":     perPage,
@@ -124,72 +108,6 @@ func renderBooksPage(
 	}
 
 	c.HTML(status, "books", passStandartContext(c, pageData))
-}
-
-func listAllBooks(ctx context.Context, shelf library.Shelf, fetchPerPage int) ([]entity.Book, error) {
-	page := 1
-	var allBooks []entity.Book
-
-	for {
-		books, err := shelf.ListBooks(ctx, "created_at", "desc", page, fetchPerPage)
-		if err != nil {
-			return nil, err
-		}
-
-		allBooks = append(allBooks, books.Books...)
-		if !books.HasNext() {
-			break
-		}
-		page = books.Next()
-	}
-
-	return allBooks, nil
-}
-
-func filterBooksByQuery(books []entity.Book, query string) []entity.Book {
-	if query == "" {
-		return books
-	}
-
-	keyword := strings.ToLower(query)
-	filtered := make([]entity.Book, 0, len(books))
-	for _, book := range books {
-		searchText := strings.ToLower(strings.TrimSpace(book.Title + " " + book.Author + " " + book.Series))
-		if strings.Contains(searchText, keyword) {
-			filtered = append(filtered, book)
-		}
-	}
-
-	return filtered
-}
-
-func paginateBooks(books []entity.Book, page, perPage int) (library.PaginatedBookList, int) {
-	if page < 1 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 12
-	}
-
-	totalCount := len(books)
-	totalPages := 0
-	if totalCount > 0 {
-		totalPages = (totalCount + perPage - 1) / perPage
-	}
-	if totalPages > 0 && page > totalPages {
-		page = totalPages
-	}
-
-	start := (page - 1) * perPage
-	if start > totalCount {
-		start = totalCount
-	}
-	end := start + perPage
-	if end > totalCount {
-		end = totalCount
-	}
-
-	return library.NewPaginatedBookList(books[start:end], perPage, page, totalCount), page
 }
 
 func (r *booksRoutes) uploadBook(c *gin.Context) {

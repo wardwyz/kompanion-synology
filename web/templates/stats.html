@@ -15,8 +15,62 @@
         </form>
     </section>
 
-    <!-- 统计表 -->
+    <!-- 总览 -->
     <section>
+        <div class="grid">
+            <article>
+                <header><strong>总阅读书籍</strong></header>
+                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
+            </article>
+            <article>
+                <header><strong>总阅读页数</strong></header>
+                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
+            </article>
+            <article>
+                <header><strong>总阅读时长</strong></header>
+                <p style="font-size: 1.4rem; margin: 0;"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
+            </article>
+        </div>
+    </section>
+
+    <!-- 每日明细 -->
+    <section>
+        <h2>每日阅读明细</h2>
+        {{ if .stats.DailyStats }}
+        {{ range .stats.DailyStats }}
+        <article>
+            <header>
+                <strong>{{ .Date.Format "2006-01-02" }}</strong>
+                · {{ .TotalBooks }} 本 · {{ .TotalReadPages }} 页 · {{ formatDuration .TotalReadTime }}
+            </header>
+            <table>
+                <thead>
+                    <tr>
+                        <th>书名</th>
+                        <th>阅读页数</th>
+                        <th>阅读时长</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Books }}
+                    <tr>
+                        <td>{{ .Title }}</td>
+                        <td>{{ .TotalReadPages }}</td>
+                        <td>{{ formatDuration .TotalReadTime }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </article>
+        {{ end }}
+        {{ else }}
+        <p>当前筛选时间内暂无阅读记录。</p>
+        {{ end }}
+    </section>
+
+    <!-- 按书统计表 -->
+    <section>
+        <h2>按书籍汇总</h2>
         <table>
             <thead>
                 <tr>
@@ -41,7 +95,8 @@
                     <td><strong>{{ .stats.TotalReadPages }}</strong></td>
                     <td><strong>{{ formatDuration .stats.TotalReadTime }}</strong></td>
                     <td>
-                        <strong>{{ .stats.AveragePagePerDay }} 页/天</strong>
+                        <strong>{{ .stats.AveragePagePerDay }} 页/天</strong><br>
+                        <small>{{ formatDuration .stats.AverageTimePerDay }}/天</small>
                     </td>
                 </tr>
             </tbody>

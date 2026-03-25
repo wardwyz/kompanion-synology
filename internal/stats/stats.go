@@ -122,6 +122,65 @@ func (s *KOReaderPGStats) GetGeneralStats(ctx context.Context, from, to time.Tim
 		stats.TotalReadTime += bookStat.TotalReadTime
 		stats.BookStats = append(stats.BookStats, bookStat)
 	}
+	stats.TotalBooks = len(stats.BookStats)
+
+	dailyQuery := `
+		SELECT
+			DATE(kpsd.start_time) as read_date,
+			b.title,
+			COUNT(DISTINCT kpsd.page) as total_read_pages,
+			COALESCE(SUM(kpsd.duration), 0) as total_read_time
+		FROM stats_page_stat_data kpsd
+		JOIN stats_book b ON b.koreader_partial_md5 = kpsd.koreader_partial_md5 AND b.auth_device_name = kpsd.auth_device_name
+		WHERE kpsd.start_time BETWEEN $1 AND $2
+		GROUP BY DATE(kpsd.start_time), b.title, b.koreader_partial_md5
+		HAVING COUNT(DISTINCT kpsd.page) > 0
+		ORDER BY read_date DESC, total_read_time DESC, b.title
+	`
+
+	dailyRows, err := s.pg.Pool.Query(ctx, dailyQuery, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get daily stats details: %w", err)
+	}
+	defer dailyRows.Close()
+
+	dailyByDate := map[string]*DailyReadStats{}
+	var dayOrder []string
+
+	for dailyRows.Next() {
+		var (
+			readDate       time.Time
+			bookTitle      string
+			totalReadPages int
+			totalReadTime  int
+		)
+		err = dailyRows.Scan(&readDate, &bookTitle, &totalReadPages, &totalReadTime)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan daily stats details: %w", err)
+		}
+
+		dateKey := readDate.Format("2006-01-02")
+		dayStats, exists := dailyByDate[dateKey]
+		if !exists {
+			dayStats = &DailyReadStats{Date: readDate}
+			dailyByDate[dateKey] = dayStats
+			dayOrder = append(dayOrder, dateKey)
+		}
+
+		dayStats.Books = append(dayStats.Books, DailyBookStats{
+			Title:          bookTitle,
+			TotalReadPages: totalReadPages,
+			TotalReadTime:  totalReadTime,
+		})
+		dayStats.TotalReadPages += totalReadPages
+		dayStats.TotalReadTime += totalReadTime
+	}
+
+	for _, key := range dayOrder {
+		day := dailyByDate[key]
+		day.TotalBooks = len(day.Books)
+		stats.DailyStats = append(stats.DailyStats, *day)
+	}
 
 	// Calculate days between dates for averages
 	days := to.Sub(from).Hours() / 24

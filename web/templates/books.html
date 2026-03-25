@@ -13,10 +13,19 @@
     {{ end }}
 </div>
 
+<div style="margin-top: 1rem;">
+    <label for="book-search">搜索书籍</label>
+    <input
+        id="book-search"
+        type="search"
+        placeholder="输入书名、作者或系列"
+        autocomplete="off"
+        oninput="filterBooks()">
+</div>
 
 <section>
     {{ range .books }}
-    <div class="book-card">
+    <div class="book-card" data-book-search="{{ .Title }} {{ .Author }} {{ .Series }}">
         <div class="book-cover">
             <a href="/books/{{.ID}}">
                 <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
@@ -52,6 +61,7 @@
         </div>
     </div>
     {{ end }}
+    <p id="book-search-empty" style="display: none; color: var(--text-color-alt);">未找到匹配的书籍。</p>
 </section>
 
 {{ with .pagination }}
@@ -91,5 +101,26 @@
     </ul>
 </nav>
 {{ end }}
+
+<script>
+    function filterBooks() {
+        const input = document.getElementById("book-search");
+        const keyword = (input?.value || "").toLowerCase().trim();
+        const cards = document.querySelectorAll(".book-card");
+        const empty = document.getElementById("book-search-empty");
+
+        let visibleCount = 0;
+        cards.forEach((card) => {
+            const text = (card.getAttribute("data-book-search") || "").toLowerCase();
+            const visible = keyword === "" || text.includes(keyword);
+            card.style.display = visible ? "" : "none";
+            if (visible) visibleCount += 1;
+        });
+
+        if (empty) {
+            empty.style.display = visibleCount === 0 ? "" : "none";
+        }
+    }
+</script>
 
 {{ end }}

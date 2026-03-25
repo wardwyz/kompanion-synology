@@ -1,6 +1,18 @@
 {{ define "title" }}{{ .book.Author }} - {{ .book.Title }} - 图书 - KOmpanion{{ end }}
 
 {{ define "content" }}
+<div>
+    <form method="post" action="/books/upload" enctype="multipart/form-data" class="grid">
+        <div>
+            <input type="file" name="book" accept=".epub,.pdf,.fb2">
+        </div>
+        <button style="flex-grow: 1;">上传本地文件</button>
+    </form>
+    {{ if .uploadError }}
+    <p class="help is-danger" style="margin-top: 0.75rem; color: #d33;">{{ .uploadError }}</p>
+    {{ end }}
+</div>
+
 {{ with .book }}
 <article class="edit-book-article">
     <!-- 书籍封面 -->

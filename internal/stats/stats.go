@@ -138,7 +138,8 @@ func (s *KOReaderPGStats) GetGeneralStats(ctx context.Context, from, to time.Tim
 		ORDER BY read_date DESC, total_read_time DESC, b.title
 	`
 
-	dailyRows, err := s.pg.Pool.Query(ctx, dailyQuery, from, to)
+	dailyDetailsFrom := getDailyDetailsFrom(from, to)
+	dailyRows, err := s.pg.Pool.Query(ctx, dailyQuery, dailyDetailsFrom, to)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get daily stats details: %w", err)
 	}
@@ -190,6 +191,26 @@ func (s *KOReaderPGStats) GetGeneralStats(ctx context.Context, from, to time.Tim
 	}
 
 	return &stats, nil
+}
+
+func getDailyDetailsFrom(from, to time.Time) time.Time {
+	recentWeekStart := to.AddDate(0, 0, -6)
+	recentWeekStart = time.Date(
+		recentWeekStart.Year(),
+		recentWeekStart.Month(),
+		recentWeekStart.Day(),
+		0,
+		0,
+		0,
+		0,
+		recentWeekStart.Location(),
+	)
+
+	if recentWeekStart.After(from) {
+		return recentWeekStart
+	}
+
+	return from
 }
 
 type DailyStats struct {

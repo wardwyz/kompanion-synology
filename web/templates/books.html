@@ -14,18 +14,24 @@
 </div>
 
 <div style="margin-top: 1rem;">
-    <label for="book-search">搜索书籍</label>
-    <input
-        id="book-search"
-        type="search"
-        placeholder="输入书名、作者或系列"
-        autocomplete="off"
-        oninput="filterBooks()">
+    <form method="GET" action="/books" class="grid">
+        <div>
+            <label for="book-search">搜索书籍</label>
+            <input
+                id="book-search"
+                name="q"
+                type="search"
+                placeholder="输入书名、作者或系列"
+                value="{{ .searchQuery }}"
+                autocomplete="off">
+        </div>
+        <button type="submit" style="flex-grow: 1;">搜索全部书籍</button>
+    </form>
 </div>
 
 <section>
     {{ range .books }}
-    <div class="book-card" data-book-search="{{ .Title }} {{ .Author }} {{ .Series }}">
+    <div class="book-card">
         <div class="book-cover">
             <a href="/books/{{.ID}}">
                 <img src="/books/{{.ID}}/cover" alt="{{.Title}} - {{.Author}}">
@@ -61,29 +67,31 @@
         </div>
     </div>
     {{ end }}
-    <p id="book-search-empty" style="display: none; color: var(--text-color-alt);">未找到匹配的书籍。</p>
+    {{ if not .books }}
+    <p style="color: var(--text-color-alt);">未找到匹配的书籍。</p>
+    {{ end }}
 </section>
 
 {{ with .pagination }}
 <nav class="pagination" role="navigation" aria-label="分页">
     {{ if .hasPrev }}
-    <a href="?page={{ .prevPage }}" class="pagination-prev">上一页</a>
+    <a href="?page={{ .prevPage }}{{ if $.searchQuery }}&q={{ urlquery $.searchQuery }}{{ end }}" class="pagination-prev">上一页</a>
     {{ end }}
 
     {{ if .hasNext }}
-    <a href="?page={{ .nextPage }}" class="pagination-next">下一页</a>
+    <a href="?page={{ .nextPage }}{{ if $.searchQuery }}&q={{ urlquery $.searchQuery }}{{ end }}" class="pagination-next">下一页</a>
     {{ end }}
 
     <ul class="pagination-list">
         {{ if gt .currentPage 1 }}
-        <li><a href="?page=1" class="pagination-link">1</a></li>
+        <li><a href="?page=1{{ if $.searchQuery }}&q={{ urlquery $.searchQuery }}{{ end }}" class="pagination-link">1</a></li>
         {{ if gt .currentPage 2 }}
         <li><span class="pagination-ellipsis">&hellip;</span></li>
         {{ end }}
         {{ end }}
 
         <li>
-            <a href="?page={{ .currentPage }}" class="pagination-link is-current">
+            <a href="?page={{ .currentPage }}{{ if $.searchQuery }}&q={{ urlquery $.searchQuery }}{{ end }}" class="pagination-link is-current">
                 {{ .currentPage }}
             </a>
         </li>
@@ -93,7 +101,7 @@
         <li><span class="pagination-ellipsis">&hellip;</span></li>
         {{ end }}
         <li>
-            <a href="?page={{ .totalPages }}" class="pagination-link">
+            <a href="?page={{ .totalPages }}{{ if $.searchQuery }}&q={{ urlquery $.searchQuery }}{{ end }}" class="pagination-link">
                 {{ .totalPages }}
             </a>
         </li>
@@ -101,26 +109,5 @@
     </ul>
 </nav>
 {{ end }}
-
-<script>
-    function filterBooks() {
-        const input = document.getElementById("book-search");
-        const keyword = (input?.value || "").toLowerCase().trim();
-        const cards = document.querySelectorAll(".book-card");
-        const empty = document.getElementById("book-search-empty");
-
-        let visibleCount = 0;
-        cards.forEach((card) => {
-            const text = (card.getAttribute("data-book-search") || "").toLowerCase();
-            const visible = keyword === "" || text.includes(keyword);
-            card.style.display = visible ? "" : "none";
-            if (visible) visibleCount += 1;
-        });
-
-        if (empty) {
-            empty.style.display = visibleCount === 0 ? "" : "none";
-        }
-    }
-</script>
 
 {{ end }}

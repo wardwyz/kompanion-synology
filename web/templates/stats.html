@@ -20,16 +20,16 @@
         <table>
             <thead>
                 <tr>
-                    <th>书名</th>
-                    <th>阅读页数</th>
-                    <th>阅读时长</th>
+                    <th>总阅读书籍</th>
+                    <th>总阅读页数</th>
+                    <th>总阅读时长</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>总阅读书籍 {{ .stats.TotalBooks }} 本</td>
-                    <td>总阅读页数 {{ .stats.TotalReadPages }} 页</td>
-                    <td>总阅读时长 {{ formatDuration .stats.TotalReadTime }}</td>
+                    <td>{{ .stats.TotalBooks }} 本</td>
+                    <td>{{ .stats.TotalReadPages }} 页</td>
+                    <td>{{ formatDuration .stats.TotalReadTime }}</td>
                 </tr>
             </tbody>
         </table>

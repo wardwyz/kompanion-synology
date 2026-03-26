@@ -2,44 +2,6 @@
 
 {{ define "content" }}
 <article>
-    <style>
-        .stats-overview-grid {
-            display: block;
-        }
-
-        .stats-overview-grid .overview-card {
-            display: flex;
-            align-items: stretch;
-            justify-content: space-between;
-            gap: 0.75rem;
-            margin-bottom: 0;
-            overflow-x: auto;
-        }
-
-        .stats-overview-grid .overview-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            white-space: nowrap;
-            flex: 1 1 0;
-            min-width: 7rem;
-        }
-
-        .stats-overview-grid .overview-value {
-            font-size: 1.35rem;
-            margin: 0;
-            line-height: 1.2;
-            white-space: nowrap;
-        }
-
-        .stats-overview-grid .overview-label {
-            margin: 0;
-            line-height: 1.2;
-        }
-    </style>
-
     <header>
         <h1>阅读统计</h1>
     </header>
@@ -55,22 +17,22 @@
 
     <!-- 总览 -->
     <section>
-        <div class="stats-overview-grid">
-            <article class="overview-card">
-                <div class="overview-item">
-                    <p class="overview-label"><strong>总阅读书籍</strong></p>
-                    <p class="overview-value"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
-                </div>
-                <div class="overview-item">
-                    <p class="overview-label"><strong>总阅读页数</strong></p>
-                    <p class="overview-value"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
-                </div>
-                <div class="overview-item">
-                    <p class="overview-label"><strong>总阅读时长</strong></p>
-                    <p class="overview-value"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
-                </div>
-            </article>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>书名</th>
+                    <th>阅读页数</th>
+                    <th>阅读时长</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>总阅读书籍 {{ .stats.TotalBooks }} 本</td>
+                    <td>总阅读页数 {{ .stats.TotalReadPages }} 页</td>
+                    <td>总阅读时长 {{ formatDuration .stats.TotalReadTime }}</td>
+                </tr>
+            </tbody>
+        </table>
     </section>
 
     <!-- 图表 -->

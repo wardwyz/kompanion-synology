@@ -120,7 +120,7 @@ func (r *UserDatabaseRepo) GetDeviceByName(ctx context.Context, deviceName strin
 	sql := `
 		SELECT device_name, hashed_password
 		FROM auth_device
-		WHERE device_name = $1
+		WHERE device_name = $1 AND is_active = true
 	`
 	args := []interface{}{deviceName}
 
@@ -139,7 +139,7 @@ func (r *UserDatabaseRepo) DeleteDevice(ctx context.Context, deviceName string) 
 		UPDATE auth_device
 		SET is_active = false,
 			deactivated_at = NOW()
-		WHERE device_name = $1
+		WHERE device_name = $1 AND is_active = true
 	`
 	args := []interface{}{deviceName}
 
@@ -151,10 +151,24 @@ func (r *UserDatabaseRepo) DeleteDevice(ctx context.Context, deviceName string) 
 	return nil
 }
 
+func (r *UserDatabaseRepo) RemoveDevice(ctx context.Context, deviceName string) error {
+	sql := `DELETE FROM auth_device WHERE device_name = $1`
+	args := []interface{}{deviceName}
+
+	_, err := r.Pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("UserDatabaseRepo - RemoveDevice - r.Pool.Exec: %w", err)
+	}
+
+	return nil
+}
+
 func (r *UserDatabaseRepo) ListDevices(ctx context.Context) ([]Device, error) {
 	sql := `
 		SELECT device_name, hashed_password
 		FROM auth_device
+		WHERE is_active = true
+		ORDER BY created_at DESC
 	`
 
 	rows, err := r.Pool.Query(ctx, sql)

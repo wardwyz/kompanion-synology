@@ -46,6 +46,14 @@
                             </button>
                         </form>
 
+                        <!-- 删除 -->
+                        <form action="/devices/delete/{{.Name}}" method="POST" style="display:inline;">
+                            <button type="submit"
+                                onclick="return confirm('确定要删除该设备吗？删除后可重新添加同名设备。')">
+                                删除
+                            </button>
+                        </form>
+
                     </td>
                 </tr>
                 {{end}}

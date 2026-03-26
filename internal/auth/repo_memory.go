@@ -118,3 +118,7 @@ func (mr *MemoryRepo) ListDevices(ctx context.Context) ([]Device, error) {
 	}
 	return devices, nil
 }
+
+func (mr *MemoryRepo) RemoveDevice(ctx context.Context, deviceName string) error {
+	return mr.DeleteDevice(ctx, deviceName)
+}

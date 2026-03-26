@@ -17,6 +17,7 @@ func newDeviceRoutes(handler *gin.RouterGroup, a auth.AuthInterface, l logger.In
 	handler.GET("/", r.listDevices)
 	handler.POST("/add", r.addDeviceAction)
 	handler.POST("/deactivate/:device_name", r.deactivateDeviceAction)
+	handler.POST("/delete/:device_name", r.deleteDeviceAction)
 }
 
 func (r *deviceRoutes) listDevices(c *gin.Context) {
@@ -58,6 +59,19 @@ func (r *deviceRoutes) addDeviceAction(c *gin.Context) {
 func (r *deviceRoutes) deactivateDeviceAction(c *gin.Context) {
 	deviceName := c.Param("device_name")
 	err := r.auth.DeactivateUserDevice(c.Request.Context(), deviceName)
+	if err != nil {
+		c.HTML(400, "devices", passStandartContext(c, gin.H{
+			"error": err.Error(),
+		}))
+		return
+	}
+
+	c.Redirect(302, "/devices")
+}
+
+func (r *deviceRoutes) deleteDeviceAction(c *gin.Context) {
+	deviceName := c.Param("device_name")
+	err := r.auth.RemoveUserDevice(c.Request.Context(), deviceName)
 	if err != nil {
 		c.HTML(400, "devices", passStandartContext(c, gin.H{
 			"error": err.Error(),

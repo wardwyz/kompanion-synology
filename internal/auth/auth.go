@@ -84,6 +84,10 @@ func (a *AuthService) DeactivateUserDevice(ctx context.Context, device_name stri
 	return a.repo.DeleteDevice(ctx, device_name)
 }
 
+func (a *AuthService) RemoveUserDevice(ctx context.Context, device_name string) error {
+	return a.repo.RemoveDevice(ctx, device_name)
+}
+
 func (a *AuthService) CheckDevicePassword(ctx context.Context, device_name, password string, plain bool) bool {
 	device, err := a.repo.GetDeviceByName(ctx, device_name)
 	if err != nil {

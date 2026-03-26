@@ -28,6 +28,7 @@ type AuthInterface interface {
 
 	AddUserDevice(ctx context.Context, device_name, password string) error
 	DeactivateUserDevice(ctx context.Context, device_name string) error
+	RemoveUserDevice(ctx context.Context, device_name string) error
 	CheckDevicePassword(ctx context.Context, device_name, password string, plain bool) bool
 	ListDevices(ctx context.Context) ([]Device, error)
 }
@@ -46,6 +47,7 @@ type UserRepo interface {
 	CreateDevice(ctx context.Context, device Device) error
 	GetDeviceByName(ctx context.Context, device_name string) (Device, error)
 	DeleteDevice(ctx context.Context, device_name string) error
+	RemoveDevice(ctx context.Context, device_name string) error
 	ListDevices(ctx context.Context) ([]Device, error)
 }
 

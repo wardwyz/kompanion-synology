@@ -4,25 +4,31 @@
 <article>
     <style>
         .stats-overview-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: stretch;
+            display: block;
         }
 
         .stats-overview-grid .overview-card {
             display: flex;
-            flex: 1 1 12rem;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0;
+            overflow-x: auto;
+        }
+
+        .stats-overview-grid .overview-item {
+            display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             text-align: center;
-            gap: 0.15rem;
-            min-height: 5.25rem;
+            white-space: nowrap;
+            flex: 1 1 0;
+            min-width: 7rem;
         }
 
         .stats-overview-grid .overview-value {
-            font-size: 1.6rem;
+            font-size: 1.35rem;
             margin: 0;
             line-height: 1.2;
             white-space: nowrap;
@@ -51,16 +57,18 @@
     <section>
         <div class="stats-overview-grid">
             <article class="overview-card">
-                <p class="overview-label"><strong>总阅读书籍</strong></p>
-                <p class="overview-value"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
-            </article>
-            <article class="overview-card">
-                <p class="overview-label"><strong>总阅读页数</strong></p>
-                <p class="overview-value"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
-            </article>
-            <article class="overview-card">
-                <p class="overview-label"><strong>总阅读时长</strong></p>
-                <p class="overview-value"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
+                <div class="overview-item">
+                    <p class="overview-label"><strong>总阅读书籍</strong></p>
+                    <p class="overview-value"><strong>{{ .stats.TotalBooks }}</strong> 本</p>
+                </div>
+                <div class="overview-item">
+                    <p class="overview-label"><strong>总阅读页数</strong></p>
+                    <p class="overview-value"><strong>{{ .stats.TotalReadPages }}</strong> 页</p>
+                </div>
+                <div class="overview-item">
+                    <p class="overview-label"><strong>总阅读时长</strong></p>
+                    <p class="overview-value"><strong>{{ formatDuration .stats.TotalReadTime }}</strong></p>
+                </div>
             </article>
         </div>
     </section>

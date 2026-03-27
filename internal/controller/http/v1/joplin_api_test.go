@@ -107,7 +107,6 @@ func TestJoplinAPI_InvalidToken(t *testing.T) {
 	}
 }
 
-
 func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -219,5 +218,36 @@ func TestJoplinAPI_LegacyRootPathCreateAndReadMarkdownNote(t *testing.T) {
 	gotBody, _ := out.Items[0]["body"].(string)
 	if strings.TrimRight(gotBody, "\n") != strings.TrimRight(markdownBody, "\n") {
 		t.Fatalf("expected markdown body %q, got %q", markdownBody, gotBody)
+	}
+}
+
+func TestJoplinAPI_PutCreatesMissingNote(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	payload := map[string]string{
+		"body": "created-via-put",
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPut, "/joplin/notes/fixed-id-1?token=test-token", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("put status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	var out map[string]interface{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &out); err != nil {
+		t.Fatalf("unmarshal put response: %v", err)
+	}
+	if got := out["id"]; got != "fixed-id-1" {
+		t.Fatalf("expected id fixed-id-1, got %v", got)
 	}
 }

@@ -2,9 +2,12 @@ package notes
 
 import (
 	"context"
+	"errors"
 
 	"github.com/vanadium23/kompanion/internal/entity"
 )
+
+var ErrNoteNotFound = errors.New("note not found")
 
 type Repo interface {
 	Store(ctx context.Context, note entity.ReadingNote) error

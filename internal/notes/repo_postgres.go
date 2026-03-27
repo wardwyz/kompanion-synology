@@ -36,7 +36,7 @@ func (r *PostgresRepo) Update(ctx context.Context, note entity.ReadingNote) erro
 		return fmt.Errorf("PostgresRepo - Update - r.Pool.Exec: %w", err)
 	}
 	if res.RowsAffected() == 0 {
-		return fmt.Errorf("PostgresRepo - Update - no rows affected")
+		return ErrNoteNotFound
 	}
 	return nil
 }

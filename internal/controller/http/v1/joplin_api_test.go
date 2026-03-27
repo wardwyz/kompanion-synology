@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -106,6 +107,23 @@ func TestJoplinAPI_InvalidToken(t *testing.T) {
 	}
 }
 
+func TestJoplinAPI_TokenFromAuthorizationHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	req := httptest.NewRequest(http.MethodGet, "/joplin/ping", nil)
+	req.Header.Set("Authorization", "Bearer test-token")
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+}
+
 func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -165,6 +183,76 @@ func TestJoplinAPI_LegacyRootPath(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 
+	if got := resp.Body.String(); got != "JoplinClipperServer" {
+		t.Fatalf("unexpected ping body: %s", got)
+	}
+}
+
+func TestJoplinAPI_LegacyRootPathCreateAndReadMarkdownNote(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+
+	joplinRoutes := r.Group("/joplin")
+	joplinRoutes.Use(joplinTokenMiddleware("custom-token-8322"))
+	newJoplinRoutes(joplinRoutes, noteSvc, logger.New("error"))
+
+	legacyRoutes := r.Group("/")
+	legacyRoutes.Use(joplinTokenMiddleware("custom-token-8322"))
+	newJoplinRoutes(legacyRoutes, noteSvc, logger.New("error"))
+
+	markdownBody := "# Reading note\n\n- highlight one\n- highlight two\n"
+	payload := map[string]string{
+		"title": "Markdown upload check",
+		"body":  markdownBody,
+	}
+	body, _ := json.Marshal(payload)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/notes?token=custom-token-8322", bytes.NewReader(body))
+	createReq.Header.Set("Content-Type", "application/json")
+	createResp := httptest.NewRecorder()
+	r.ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/notes?token=custom-token-8322", nil)
+	listResp := httptest.NewRecorder()
+	r.ServeHTTP(listResp, listReq)
+	if listResp.Code != http.StatusOK {
+		t.Fatalf("list status = %d, body = %s", listResp.Code, listResp.Body.String())
+	}
+
+	var out struct {
+		Items []map[string]interface{} `json:"items"`
+	}
+	if err := json.Unmarshal(listResp.Body.Bytes(), &out); err != nil {
+		t.Fatalf("unmarshal list response: %v", err)
+	}
+	if len(out.Items) != 1 {
+		t.Fatalf("expected 1 note, got %d", len(out.Items))
+	}
+	gotBody, _ := out.Items[0]["body"].(string)
+	if strings.TrimRight(gotBody, "\n") != strings.TrimRight(markdownBody, "\n") {
+		t.Fatalf("expected markdown body %q, got %q", markdownBody, gotBody)
+	}
+}
+
+func TestJoplinAPI_TrailingSlashEndpoints(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+
+	joplinRoutes := r.Group("/joplin")
+	joplinRoutes.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(joplinRoutes, noteSvc, logger.New("error"))
+
+	req := httptest.NewRequest(http.MethodGet, "/joplin/ping/?token=test-token", nil)
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
 	if got := resp.Body.String(); got != "JoplinClipperServer" {
 		t.Fatalf("unexpected ping body: %s", got)
 	}

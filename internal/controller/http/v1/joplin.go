@@ -31,19 +31,12 @@ func newJoplinRoutes(handler *gin.RouterGroup, n notes.Service, l logger.Interfa
 	h := handler.Group("/")
 	{
 		h.GET("/ping", r.ping)
-		h.GET("/ping/", r.ping)
 		h.GET("/folders", r.listFolders)
-		h.GET("/folders/", r.listFolders)
 		h.GET("/folders/:id/notes", r.listNotes)
-		h.GET("/folders/:id/notes/", r.listNotes)
 		h.POST("/folders/:id/notes", r.createNote)
-		h.POST("/folders/:id/notes/", r.createNote)
 		h.POST("/notes", r.createNote)
-		h.POST("/notes/", r.createNote)
 		h.PUT("/notes/:id", r.updateNote)
-		h.PUT("/notes/:id/", r.updateNote)
 		h.GET("/notes", r.listNotes)
-		h.GET("/notes/", r.listNotes)
 	}
 }
 
@@ -164,12 +157,7 @@ func normalizeJoplinTitle(payload joplinNotePayload) string {
 
 func joplinTokenMiddleware(token string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		queryToken := strings.TrimSpace(c.Query("token"))
-		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
-		bearerToken := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
-		xAPIHeaderToken := strings.TrimSpace(c.GetHeader("X-API-Token"))
-
-		if queryToken != token && bearerToken != token && xAPIHeaderToken != token {
+		if c.Query("token") != token {
 			c.JSON(http.StatusForbidden, gin.H{"error": `Invalid "token" parameter`})
 			c.Abort()
 			return

@@ -107,22 +107,6 @@ func TestJoplinAPI_InvalidToken(t *testing.T) {
 	}
 }
 
-func TestJoplinAPI_TokenFromAuthorizationHeader(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	noteSvc := notes.NewService(notes.NewMemoryRepo())
-	jg := r.Group("/joplin")
-	jg.Use(joplinTokenMiddleware("test-token"))
-	newJoplinRoutes(jg, noteSvc, logger.New("error"))
-
-	req := httptest.NewRequest(http.MethodGet, "/joplin/ping", nil)
-	req.Header.Set("Authorization", "Bearer test-token")
-	resp := httptest.NewRecorder()
-	r.ServeHTTP(resp, req)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
-	}
-}
 
 func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -235,25 +219,5 @@ func TestJoplinAPI_LegacyRootPathCreateAndReadMarkdownNote(t *testing.T) {
 	gotBody, _ := out.Items[0]["body"].(string)
 	if strings.TrimRight(gotBody, "\n") != strings.TrimRight(markdownBody, "\n") {
 		t.Fatalf("expected markdown body %q, got %q", markdownBody, gotBody)
-	}
-}
-
-func TestJoplinAPI_TrailingSlashEndpoints(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	noteSvc := notes.NewService(notes.NewMemoryRepo())
-
-	joplinRoutes := r.Group("/joplin")
-	joplinRoutes.Use(joplinTokenMiddleware("test-token"))
-	newJoplinRoutes(joplinRoutes, noteSvc, logger.New("error"))
-
-	req := httptest.NewRequest(http.MethodGet, "/joplin/ping/?token=test-token", nil)
-	resp := httptest.NewRecorder()
-	r.ServeHTTP(resp, req)
-	if resp.Code != http.StatusOK {
-		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
-	}
-	if got := resp.Body.String(); got != "JoplinClipperServer" {
-		t.Fatalf("unexpected ping body: %s", got)
 	}
 }

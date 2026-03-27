@@ -9,12 +9,13 @@ import (
 
 	"github.com/vanadium23/kompanion/internal/auth"
 	"github.com/vanadium23/kompanion/internal/library"
+	"github.com/vanadium23/kompanion/internal/notes"
 	"github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
 )
 
 // NewRouter -.
-func NewRouter(handler *gin.Engine, l logger.Interface, a auth.AuthInterface, p sync.Progress, shelf library.Shelf) {
+func NewRouter(handler *gin.Engine, l logger.Interface, a auth.AuthInterface, p sync.Progress, shelf library.Shelf, noteSvc notes.Service, joplinToken string) {
 	// Options
 	handler.Use(gin.Logger())
 	handler.Use(gin.Recovery())
@@ -31,4 +32,8 @@ func NewRouter(handler *gin.Engine, l logger.Interface, a auth.AuthInterface, p 
 	syncRoutes := handler.Group("/syncs")
 	syncRoutes.Use(authDeviceMiddleware(a, l))
 	newSyncRoutes(syncRoutes, p, l)
+
+	joplinRoutes := handler.Group("/joplin")
+	joplinRoutes.Use(joplinTokenMiddleware(joplinToken))
+	newJoplinRoutes(joplinRoutes, noteSvc, l)
 }

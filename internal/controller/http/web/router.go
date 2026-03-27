@@ -17,6 +17,7 @@ import (
 	"github.com/vanadium23/kompanion"
 	"github.com/vanadium23/kompanion/internal/auth"
 	"github.com/vanadium23/kompanion/internal/library"
+	"github.com/vanadium23/kompanion/internal/notes"
 	"github.com/vanadium23/kompanion/internal/stats"
 	"github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
@@ -29,6 +30,7 @@ func NewRouter(
 	p sync.Progress,
 	shelf library.Shelf,
 	stats stats.ReadingStats,
+	noteSvc notes.Service,
 	version string,
 ) {
 	// Options
@@ -94,12 +96,17 @@ func NewRouter(
 	// Product pages
 	bookGroup := handler.Group("/books")
 	bookGroup.Use(authMiddleware(a))
-	newBooksRoutes(bookGroup, shelf, stats, p, l)
+	newBooksRoutes(bookGroup, shelf, stats, p, noteSvc, l)
 
 	// Stats pages
 	statsGroup := handler.Group("/stats")
 	statsGroup.Use(authMiddleware(a))
 	newStatsRoutes(statsGroup, stats, l)
+
+	// Notes pages
+	notesGroup := handler.Group("/notes")
+	notesGroup.Use(authMiddleware(a))
+	newNotesRoutes(notesGroup, noteSvc, l)
 
 	// Device management
 	deviceGroup := handler.Group("/devices")

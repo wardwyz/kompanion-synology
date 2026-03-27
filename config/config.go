@@ -16,6 +16,7 @@ type (
 		Log
 		PG
 		BookStorage
+		Joplin
 	}
 
 	// App -.
@@ -51,6 +52,10 @@ type (
 		Type string
 		Path string
 	}
+
+	Joplin struct {
+		Token string
+	}
 )
 
 // NewConfig - reads from env, validates and returns the config.
@@ -80,6 +85,11 @@ func NewConfig(version string) (*Config, error) {
 		return nil, err
 	}
 
+	joplin, err := readJoplinConfig(auth)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		App: App{
 			Name:    "kompanion",
@@ -90,6 +100,7 @@ func NewConfig(version string) (*Config, error) {
 		Log:         log,
 		PG:          postgres,
 		BookStorage: bookStorage,
+		Joplin:      joplin,
 	}, nil
 }
 
@@ -174,4 +185,12 @@ func readBookStorageConfig() (BookStorage, error) {
 func readPrefixedEnv(key string) string {
 	envKey := fmt.Sprintf("KOMPANION_%s", strings.ToUpper(key))
 	return os.Getenv(envKey)
+}
+
+func readJoplinConfig(_ Auth) (Joplin, error) {
+	token := readPrefixedEnv("JOPLIN_TOKEN")
+	if token == "" {
+		return Joplin{}, fmt.Errorf("joplin token is empty")
+	}
+	return Joplin{Token: token}, nil
 }

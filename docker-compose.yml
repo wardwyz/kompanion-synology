@@ -22,6 +22,7 @@ services:
       KOMPANION_BSTORAGE_PATH: '/data/books/'
       KOMPANION_AUTH_USERNAME: 'user'
       KOMPANION_AUTH_PASSWORD: 'password'
+      KOMPANION_JOPLIN_TOKEN: 'please-change-this-joplin-token'
     ports:
       - 8080:8080
     depends_on:

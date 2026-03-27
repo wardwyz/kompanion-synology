@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/vanadium23/kompanion/internal/entity"
 	"github.com/vanadium23/kompanion/internal/library"
+	"github.com/vanadium23/kompanion/internal/notes"
 	"github.com/vanadium23/kompanion/internal/stats"
 	syncpkg "github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
@@ -18,14 +19,16 @@ type booksRoutes struct {
 	shelf    library.Shelf
 	stats    stats.ReadingStats
 	progress syncpkg.Progress
+	notes    notes.Service
 	logger   logger.Interface
 }
 
-func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, l logger.Interface) {
+func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, notesSvc notes.Service, l logger.Interface) {
 	r := &booksRoutes{
 		shelf:    shelf,
 		stats:    stats,
 		progress: progress,
+		notes:    notesSvc,
 		logger:   l,
 	}
 
@@ -182,9 +185,16 @@ func (r *booksRoutes) viewBook(c *gin.Context) {
 		bookStats = &stats.BookStats{} // Use empty stats in case of error
 	}
 
+	bookNotes, err := r.notes.ListByDocument(c.Request.Context(), book.DocumentID, 100)
+	if err != nil {
+		r.logger.Error(err, "failed to get book notes")
+		bookNotes = nil
+	}
+
 	c.HTML(200, "book", passStandartContext(c, gin.H{
 		"book":  book,
 		"stats": bookStats,
+		"notes": bookNotes,
 	}))
 }
 

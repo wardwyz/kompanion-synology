@@ -57,6 +57,39 @@ func TestJoplinAPI_CreateAndListNotes(t *testing.T) {
 	}
 }
 
+func TestJoplinAPI_CreateNoteWithoutTitleOrBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	payload := map[string]string{
+		"source_url": "https://example.local?book=1&koreader_partial_md5=docxyz",
+	}
+	body, _ := json.Marshal(payload)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/joplin/notes?token=test-token", bytes.NewReader(body))
+	createReq.Header.Set("Content-Type", "application/json")
+	createResp := httptest.NewRecorder()
+	r.ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+
+	var out map[string]interface{}
+	if err := json.Unmarshal(createResp.Body.Bytes(), &out); err != nil {
+		t.Fatalf("unmarshal create response: %v", err)
+	}
+	if got := out["title"]; got != "KOReader Note docxyz" {
+		t.Fatalf("expected fallback title, got %v", got)
+	}
+	if got := out["body"]; got != "" {
+		t.Fatalf("expected empty body, got %v", got)
+	}
+}
+
 func TestJoplinAPI_InvalidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

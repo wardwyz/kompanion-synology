@@ -17,8 +17,8 @@ type joplinRoutes struct {
 
 type joplinNotePayload struct {
 	ID         string `json:"id"`
-	Title      string `json:"title" binding:"required"`
-	Body       string `json:"body" binding:"required"`
+	Title      string `json:"title"`
+	Body       string `json:"body"`
 	Source     string `json:"source"`
 	SourceURL  string `json:"source_url"`
 	DocumentID string `json:"document_id"`
@@ -55,8 +55,8 @@ func (r *joplinRoutes) createNote(c *gin.Context) {
 
 	note := entity.ReadingNote{
 		ID:         payload.ID,
-		Title:      payload.Title,
-		Body:       payload.Body,
+		Title:      normalizeJoplinTitle(payload),
+		Body:       strings.TrimSpace(payload.Body),
 		Source:     payload.Source,
 		SourceURL:  payload.SourceURL,
 		DocumentID: payload.DocumentID,
@@ -85,8 +85,8 @@ func (r *joplinRoutes) updateNote(c *gin.Context) {
 
 	note := entity.ReadingNote{
 		ID:         payload.ID,
-		Title:      payload.Title,
-		Body:       payload.Body,
+		Title:      normalizeJoplinTitle(payload),
+		Body:       strings.TrimSpace(payload.Body),
 		Source:     payload.Source,
 		SourceURL:  payload.SourceURL,
 		DocumentID: payload.DocumentID,
@@ -133,6 +133,23 @@ func extractDocumentID(payload joplinNotePayload) string {
 		}
 	}
 	return ""
+}
+
+func normalizeJoplinTitle(payload joplinNotePayload) string {
+	title := strings.TrimSpace(payload.Title)
+	if title != "" {
+		return title
+	}
+
+	if payload.DocumentID != "" {
+		return "KOReader Note " + strings.TrimSpace(payload.DocumentID)
+	}
+
+	if extracted := extractDocumentID(payload); extracted != "" {
+		return "KOReader Note " + extracted
+	}
+
+	return "KOReader Note"
 }
 
 func joplinTokenMiddleware(token string) gin.HandlerFunc {

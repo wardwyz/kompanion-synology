@@ -56,6 +56,9 @@ func TestJoplinAPI_CreateAndListNotes(t *testing.T) {
 	if got := out.Items[0]["document_id"]; got != "doc123" {
 		t.Fatalf("expected extracted document_id doc123, got %v", got)
 	}
+	if got := out.Items[0]["parent_id"]; got != "kompanion" {
+		t.Fatalf("expected parent_id kompanion, got %v", got)
+	}
 	if !strings.Contains(listResp.Body.String(), `"has_more":false`) {
 		t.Fatalf("expected has_more in list response, got %s", listResp.Body.String())
 	}
@@ -259,6 +262,9 @@ func TestJoplinAPI_PutCreatesMissingNote(t *testing.T) {
 	}
 	if got := out["id"]; got != "fixed-id-1" {
 		t.Fatalf("expected id fixed-id-1, got %v", got)
+	}
+	if got := out["parent_id"]; got != "kompanion" {
+		t.Fatalf("expected parent_id kompanion, got %v", got)
 	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/joplin/notes/fixed-id-1?token=test-token", nil)

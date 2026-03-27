@@ -36,4 +36,10 @@ func NewRouter(handler *gin.Engine, l logger.Interface, a auth.AuthInterface, p 
 	joplinRoutes := handler.Group("/joplin")
 	joplinRoutes.Use(joplinTokenMiddleware(joplinToken))
 	newJoplinRoutes(joplinRoutes, noteSvc, l)
+
+	// Some KOReader builds only accept plain "IP + Port" and always call
+	// /ping, /folders, /notes on the root path (without "/joplin" prefix).
+	legacyJoplinRoutes := handler.Group("/")
+	legacyJoplinRoutes.Use(joplinTokenMiddleware(joplinToken))
+	newJoplinRoutes(legacyJoplinRoutes, noteSvc, l)
 }

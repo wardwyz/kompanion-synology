@@ -21,6 +21,7 @@ type joplinNotePayload struct {
 	Body       string `json:"body"`
 	Source     string `json:"source"`
 	SourceURL  string `json:"source_url"`
+	ParentID   string `json:"parent_id"`
 	DocumentID string `json:"document_id"`
 }
 
@@ -31,6 +32,8 @@ func newJoplinRoutes(handler *gin.RouterGroup, n notes.Service, l logger.Interfa
 	{
 		h.GET("/ping", r.ping)
 		h.GET("/folders", r.listFolders)
+		h.GET("/folders/:id/notes", r.listNotes)
+		h.POST("/folders/:id/notes", r.createNote)
 		h.POST("/notes", r.createNote)
 		h.PUT("/notes/:id", r.updateNote)
 		h.GET("/notes", r.listNotes)

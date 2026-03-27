@@ -1,0 +1,18 @@
+{{ define "title" }}{{ if .note.Title }}{{ .note.Title }}{{ else }}笔记详情{{ end }} | KOmpanion{{ end }}
+
+{{ define "content" }}
+<article class="book-detail">
+    <header>
+        <h1>{{ if .note.Title }}{{ .note.Title }}{{ else }}(无标题){{ end }}</h1>
+        <p style="color: var(--text-color-alt);">
+            Note ID: <code>{{ .note.ID }}</code> · 更新时间：{{ .note.UpdatedAt }}
+        </p>
+        <p><a href="/notes/">← 返回笔记列表</a></p>
+    </header>
+
+    <section>
+        <h2>Markdown 内容</h2>
+        <pre style="white-space: pre-wrap; word-break: break-word;">{{ .markdown }}</pre>
+    </section>
+</article>
+{{ end }}

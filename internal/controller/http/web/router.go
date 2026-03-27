@@ -18,6 +18,7 @@ import (
 	"github.com/vanadium23/kompanion/internal/auth"
 	"github.com/vanadium23/kompanion/internal/library"
 	"github.com/vanadium23/kompanion/internal/stats"
+	"github.com/vanadium23/kompanion/internal/storage"
 	"github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
 )
@@ -28,6 +29,7 @@ func NewRouter(
 	a auth.AuthInterface,
 	p sync.Progress,
 	shelf library.Shelf,
+	bookStorage storage.Storage,
 	stats stats.ReadingStats,
 	version string,
 ) {
@@ -105,6 +107,11 @@ func NewRouter(
 	deviceGroup := handler.Group("/devices")
 	deviceGroup.Use(authMiddleware(a))
 	newDeviceRoutes(deviceGroup, a, l)
+
+	// Joplin notes page
+	notesGroup := handler.Group("/notes")
+	notesGroup.Use(authMiddleware(a))
+	newNotesRoutes(notesGroup, bookStorage, l)
 }
 
 func passStandartContext(c *gin.Context, data gin.H) gin.H {

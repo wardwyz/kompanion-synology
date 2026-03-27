@@ -1,0 +1,35 @@
+{{ define "title" }}笔记列表 | KOmpanion{{ end }}
+
+{{ define "content" }}
+<article class="book-detail">
+    <header>
+        <h1>KOReader 笔记</h1>
+        <p style="color: var(--text-color-alt);">
+            这里展示通过 Joplin 兼容接口接收到的 Markdown 笔记。
+        </p>
+    </header>
+
+    {{ if .notes }}
+    <table>
+        <thead>
+            <tr>
+                <th>标题</th>
+                <th>更新时间</th>
+                <th>ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range .notes }}
+            <tr>
+                <td><a href="/notes/{{ .ID }}">{{ if .Title }}{{ .Title }}{{ else }}(无标题){{ end }}</a></td>
+                <td>{{ .UpdatedAt }}</td>
+                <td><code>{{ .ID }}</code></td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+    {{ else }}
+    <p>还没有收到任何笔记。</p>
+    {{ end }}
+</article>
+{{ end }}

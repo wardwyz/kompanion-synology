@@ -56,6 +56,9 @@ func TestJoplinAPI_CreateAndListNotes(t *testing.T) {
 	if got := out.Items[0]["document_id"]; got != "doc123" {
 		t.Fatalf("expected extracted document_id doc123, got %v", got)
 	}
+	if !strings.Contains(listResp.Body.String(), `"has_more":false`) {
+		t.Fatalf("expected has_more in list response, got %s", listResp.Body.String())
+	}
 }
 
 func TestJoplinAPI_CreateNoteWithoutTitleOrBody(t *testing.T) {
@@ -143,6 +146,13 @@ func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
 	}
 	if len(out.Items) != 1 {
 		t.Fatalf("expected 1 note, got %d", len(out.Items))
+	}
+
+	folderReq := httptest.NewRequest(http.MethodGet, "/joplin/folders/kompanion?token=test-token", nil)
+	folderResp := httptest.NewRecorder()
+	r.ServeHTTP(folderResp, folderReq)
+	if folderResp.Code != http.StatusOK {
+		t.Fatalf("folder status = %d, body = %s", folderResp.Code, folderResp.Body.String())
 	}
 }
 
@@ -249,5 +259,29 @@ func TestJoplinAPI_PutCreatesMissingNote(t *testing.T) {
 	}
 	if got := out["id"]; got != "fixed-id-1" {
 		t.Fatalf("expected id fixed-id-1, got %v", got)
+	}
+
+	getReq := httptest.NewRequest(http.MethodGet, "/joplin/notes/fixed-id-1?token=test-token", nil)
+	getResp := httptest.NewRecorder()
+	r.ServeHTTP(getResp, getReq)
+	if getResp.Code != http.StatusOK {
+		t.Fatalf("get status = %d, body = %s", getResp.Code, getResp.Body.String())
+	}
+}
+
+func TestJoplinAPI_GetNoteNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	req := httptest.NewRequest(http.MethodGet, "/joplin/notes/missing?token=test-token", nil)
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d body=%s", resp.Code, resp.Body.String())
 	}
 }

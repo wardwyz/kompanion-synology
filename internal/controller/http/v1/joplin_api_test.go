@@ -97,6 +97,52 @@ func TestJoplinAPI_CreateNoteWithoutTitleOrBody(t *testing.T) {
 	}
 }
 
+func TestJoplinAPI_CreateNoteWithEmptyBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	createReq := httptest.NewRequest(http.MethodPost, "/joplin/notes?token=test-token", nil)
+	createReq.Header.Set("Content-Type", "application/json")
+	createResp := httptest.NewRecorder()
+	r.ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+}
+
+func TestJoplinAPI_CreateNoteFromFormEncodedPayload(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	formBody := "title=Form+Note&body=hello+from+form&document_id=form-doc-1"
+	createReq := httptest.NewRequest(http.MethodPost, "/joplin/notes?token=test-token", strings.NewReader(formBody))
+	createReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	createResp := httptest.NewRecorder()
+	r.ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+
+	var out map[string]interface{}
+	if err := json.Unmarshal(createResp.Body.Bytes(), &out); err != nil {
+		t.Fatalf("unmarshal create response: %v", err)
+	}
+	if got := out["title"]; got != "Form Note" {
+		t.Fatalf("expected title from form payload, got %v", got)
+	}
+	if got := out["document_id"]; got != "form-doc-1" {
+		t.Fatalf("expected document_id from form payload, got %v", got)
+	}
+}
+
 func TestJoplinAPI_InvalidToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

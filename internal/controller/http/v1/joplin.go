@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 
@@ -62,8 +64,8 @@ func (r *joplinRoutes) getFolder(c *gin.Context) {
 }
 
 func (r *joplinRoutes) createNote(c *gin.Context) {
-	var payload joplinNotePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	payload, err := parseJoplinNotePayload(c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -91,8 +93,8 @@ func (r *joplinRoutes) createNote(c *gin.Context) {
 }
 
 func (r *joplinRoutes) updateNote(c *gin.Context) {
-	var payload joplinNotePayload
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	payload, err := parseJoplinNotePayload(c)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -118,6 +120,46 @@ func (r *joplinRoutes) updateNote(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toJoplinResponse(updated))
+}
+
+func parseJoplinNotePayload(c *gin.Context) (joplinNotePayload, error) {
+	var payload joplinNotePayload
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		return joplinNotePayload{}, err
+	}
+	c.Request.Body = io.NopCloser(strings.NewReader(string(raw)))
+
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return payloadFromForm(c), nil
+	}
+
+	if err := json.Unmarshal(raw, &payload); err == nil {
+		return payload, nil
+	}
+
+	return payloadFromForm(c), nil
+}
+
+func payloadFromForm(c *gin.Context) joplinNotePayload {
+	_ = c.Request.ParseForm()
+	formOrQuery := func(key string) string {
+		if v := c.PostForm(key); v != "" {
+			return v
+		}
+		return c.Query(key)
+	}
+	return joplinNotePayload{
+		ID:         strings.TrimSpace(formOrQuery("id")),
+		Title:      formOrQuery("title"),
+		Body:       formOrQuery("body"),
+		Source:     formOrQuery("source"),
+		SourceURL:  formOrQuery("source_url"),
+		ParentID:   formOrQuery("parent_id"),
+		DocumentID: formOrQuery("document_id"),
+	}
 }
 
 func (r *joplinRoutes) listNotes(c *gin.Context) {

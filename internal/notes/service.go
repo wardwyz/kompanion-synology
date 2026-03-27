@@ -46,6 +46,10 @@ func (s *NotesService) List(ctx context.Context, limit int) ([]entity.ReadingNot
 	return s.repo.List(ctx, limit)
 }
 
+func (s *NotesService) Get(ctx context.Context, id string) (entity.ReadingNote, error) {
+	return s.repo.Get(ctx, id)
+}
+
 func (s *NotesService) ListByDocument(ctx context.Context, documentID string, limit int) ([]entity.ReadingNote, error) {
 	return s.repo.ListByDocument(ctx, documentID, limit)
 }

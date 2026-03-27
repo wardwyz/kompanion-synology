@@ -2,8 +2,10 @@ package notes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/vanadium23/kompanion/internal/entity"
 	"github.com/vanadium23/kompanion/pkg/postgres"
 )
@@ -46,6 +48,9 @@ func (r *PostgresRepo) Get(ctx context.Context, id string) (entity.ReadingNote, 
 		FROM joplin_note WHERE id = $1`
 	var note entity.ReadingNote
 	if err := r.Pool.QueryRow(ctx, query, id).Scan(&note.ID, &note.Title, &note.Body, &note.DocumentID, &note.Source, &note.SourceURL, &note.CreatedAt, &note.UpdatedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.ReadingNote{}, ErrNoteNotFound
+		}
 		return entity.ReadingNote{}, fmt.Errorf("PostgresRepo - Get - r.Pool.QueryRow: %w", err)
 	}
 	return note, nil

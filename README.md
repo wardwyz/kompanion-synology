@@ -160,6 +160,15 @@ curl -i -X POST "http://IP:8322/notes?token=<YOUR_TOKEN>" \
 
 # 4) 查看是否写入成功
 curl -i "http://IP:8322/notes?token=<YOUR_TOKEN>"
+
+# 5) 用真实 ID 再次读取（不要写字面量 <ID>）
+NOTE_ID=$(curl -s -X POST "http://IP:8322/notes?token=<YOUR_TOKEN>" \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"KOReader Note","body":"# id-check"}' | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')
+curl -i "http://IP:8322/notes/${NOTE_ID}?token=<YOUR_TOKEN>"
+
+# 6) KOReader 可能会调用 search，建议也验证一下
+curl -i "http://IP:8322/search?token=<YOUR_TOKEN>&query=KOReader"
 ```
 
 如果你给 Joplin 单独映射了端口（示例 `8323`），把上面命令里的 `8322` 全部替换成 `8323` 即可。

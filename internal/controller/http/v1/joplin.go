@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -32,9 +33,11 @@ func newJoplinRoutes(handler *gin.RouterGroup, n notes.Service, l logger.Interfa
 	{
 		h.GET("/ping", r.ping)
 		h.GET("/folders", r.listFolders)
+		h.GET("/folders/:id", r.getFolder)
 		h.GET("/folders/:id/notes", r.listNotes)
 		h.POST("/folders/:id/notes", r.createNote)
 		h.POST("/notes", r.createNote)
+		h.GET("/notes/:id", r.getNote)
 		h.PUT("/notes/:id", r.updateNote)
 		h.GET("/notes", r.listNotes)
 	}
@@ -46,7 +49,14 @@ func (r *joplinRoutes) ping(c *gin.Context) {
 
 func (r *joplinRoutes) listFolders(c *gin.Context) {
 	// KOReader usually needs at least one notebook in the response.
-	c.JSON(http.StatusOK, gin.H{"items": []gin.H{{"id": "kompanion", "title": "KOReader Notes"}}})
+	c.JSON(http.StatusOK, gin.H{
+		"items":    []gin.H{{"id": "kompanion", "title": "KOReader Notes"}},
+		"has_more": false,
+	})
+}
+
+func (r *joplinRoutes) getFolder(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "title": "KOReader Notes"})
 }
 
 func (r *joplinRoutes) createNote(c *gin.Context) {
@@ -116,7 +126,21 @@ func (r *joplinRoutes) listNotes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"items": items})
+	c.JSON(http.StatusOK, gin.H{"items": items, "has_more": false})
+}
+
+func (r *joplinRoutes) getNote(c *gin.Context) {
+	note, err := r.notes.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		if errors.Is(err, notes.ErrNoteNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			return
+		}
+		r.l.Error(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, note)
 }
 
 func extractDocumentID(payload joplinNotePayload) string {

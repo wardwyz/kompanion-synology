@@ -40,7 +40,7 @@ func (r *MemoryRepo) Get(_ context.Context, id string) (entity.ReadingNote, erro
 	defer r.mu.RUnlock()
 	note, ok := r.items[id]
 	if !ok {
-		return entity.ReadingNote{}, fmt.Errorf("MemoryRepo - Get - note not found")
+		return entity.ReadingNote{}, fmt.Errorf("MemoryRepo - Get - note not found: %w", ErrNoteNotFound)
 	}
 	return note, nil
 }

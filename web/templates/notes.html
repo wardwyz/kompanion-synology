@@ -1,0 +1,21 @@
+{{ define "title" }}阅读笔记 - KOmpanion{{ end }}
+
+{{ define "content" }}
+<h2>阅读笔记</h2>
+<p style="color: var(--text-color-alt);">该页面展示从 KOReader（Joplin 服务）同步过来的 Markdown 笔记。</p>
+
+{{ if not .notes }}
+<p>暂无笔记。</p>
+{{ end }}
+
+{{ range .notes }}
+<article class="reading-note">
+    <h4>{{ .Title }}</h4>
+    <small>
+        {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
+        {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
+    </small>
+    <pre>{{ .Body }}</pre>
+</article>
+{{ end }}
+{{ end }}

@@ -107,4 +107,20 @@
     </table>
 </section>
 {{ end }}
+
+
+{{ if .notes }}
+<section class="reading-notes">
+    <hgroup>
+        <h3>阅读笔记（Markdown）</h3>
+    </hgroup>
+    {{ range .notes }}
+    <article class="reading-note">
+        <h4>{{ .Title }}</h4>
+        <small>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</small>
+        <pre>{{ .Body }}</pre>
+    </article>
+    {{ end }}
+</section>
+{{ end }}
 {{ end }}

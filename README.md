@@ -63,7 +63,47 @@ services:
       KOMPANION_PG_URL: "postgres://XXX:XXX@postgres:5432/postgres"
       KOMPANION_AUTH_USERNAME: XXX
       KOMPANION_AUTH_PASSWORD: XXX
+      KOMPANION_JOPLIN_TOKEN: XXX # 手动设置，供 KOReader Joplin 插件使用
     depends_on:
       - postgres
 ```
 
+
+## Joplin（KOReader 笔记同步）配置
+
+新增了一个兼容 Joplin Clipper API 的接口，用于接收 KOReader 发送的 Markdown 笔记。
+
+1. 在容器中**手动设置** `KOMPANION_JOPLIN_TOKEN`（建议随机字符串，必填）。
+2. 在 KOReader 的 Joplin 插件中配置：
+   - IP: `your-kompanion.org`
+   - Port: `8322`（示例）
+   - Token: 你配置的 `KOMPANION_JOPLIN_TOKEN`
+   - KOReader 的 Joplin 插件只支持填写 IP + 端口，服务会直接使用根路径 `/ping`、`/folders`、`/notes`。
+3. 同步后的笔记可在：
+   - 全部笔记：`/notes/`
+   - 单本书详情页：`/books/:bookID`
+
+接口示例（创建笔记）：
+
+```bash
+curl -X POST "http://127.0.0.1:8080/joplin/notes?token=<YOUR_TOKEN>" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "KOReader Note",
+    "body": "# Reading note\n\nSome markdown",
+    "document_id": "<koreader_partial_md5>"
+  }'
+```
+
+> 兼容性说明：为了兼容 KOReader，服务同时支持根路径（`/notes`）与 `/joplin/notes` 两套接口。
+
+
+### Joplin 服务端口说明
+
+- **不需要单独开一个 Joplin 容器端口**，Joplin 接口已经集成在 Kompanion 内。
+- KOReader 实际请求路径是根路径：`/ping`、`/folders`、`/notes`，端口就是 **Kompanion 的 HTTP 端口**。
+- 例如上面的 `ports: "8322:8080"`：
+  - 容器内端口：`8080`
+  - 你在 KOReader 里应填写的外部端口：`8322`
+  - KOReader 填写示例：IP=`NAS_IP`，Port=`8322`
+- 因此 **docker-compose 不需要额外映射 Joplin 端口**，复用现有 app 端口映射即可。

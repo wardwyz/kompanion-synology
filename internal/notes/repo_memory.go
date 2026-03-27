@@ -29,7 +29,7 @@ func (r *MemoryRepo) Update(_ context.Context, note entity.ReadingNote) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if _, ok := r.items[note.ID]; !ok {
-		return fmt.Errorf("MemoryRepo - Update - note not found")
+		return ErrNoteNotFound
 	}
 	r.items[note.ID] = note
 	return nil

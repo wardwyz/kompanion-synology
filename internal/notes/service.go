@@ -2,6 +2,7 @@ package notes
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/moroz/uuidv7-go"
@@ -33,6 +34,9 @@ func (s *NotesService) Save(ctx context.Context, note entity.ReadingNote) (entit
 func (s *NotesService) Update(ctx context.Context, note entity.ReadingNote) (entity.ReadingNote, error) {
 	note.UpdatedAt = time.Now().UTC()
 	if err := s.repo.Update(ctx, note); err != nil {
+		if errors.Is(err, ErrNoteNotFound) {
+			return s.Save(ctx, note)
+		}
 		return entity.ReadingNote{}, err
 	}
 	return s.repo.Get(ctx, note.ID)

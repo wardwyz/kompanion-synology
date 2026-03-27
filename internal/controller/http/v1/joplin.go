@@ -16,6 +16,8 @@ type joplinRoutes struct {
 	l     logger.Interface
 }
 
+const defaultJoplinFolderID = "kompanion"
+
 type joplinNotePayload struct {
 	ID         string `json:"id"`
 	Title      string `json:"title"`
@@ -50,7 +52,7 @@ func (r *joplinRoutes) ping(c *gin.Context) {
 func (r *joplinRoutes) listFolders(c *gin.Context) {
 	// KOReader usually needs at least one notebook in the response.
 	c.JSON(http.StatusOK, gin.H{
-		"items":    []gin.H{{"id": "kompanion", "title": "KOReader Notes"}},
+		"items":    []gin.H{{"id": defaultJoplinFolderID, "title": "KOReader Notes"}},
 		"has_more": false,
 	})
 }
@@ -85,7 +87,7 @@ func (r *joplinRoutes) createNote(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, saved)
+	c.JSON(http.StatusOK, toJoplinResponse(saved))
 }
 
 func (r *joplinRoutes) updateNote(c *gin.Context) {
@@ -115,7 +117,7 @@ func (r *joplinRoutes) updateNote(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	c.JSON(http.StatusOK, toJoplinResponse(updated))
 }
 
 func (r *joplinRoutes) listNotes(c *gin.Context) {
@@ -126,7 +128,11 @@ func (r *joplinRoutes) listNotes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"items": items, "has_more": false})
+	responseItems := make([]gin.H, 0, len(items))
+	for _, note := range items {
+		responseItems = append(responseItems, toJoplinResponse(note))
+	}
+	c.JSON(http.StatusOK, gin.H{"items": responseItems, "has_more": false})
 }
 
 func (r *joplinRoutes) getNote(c *gin.Context) {
@@ -140,7 +146,21 @@ func (r *joplinRoutes) getNote(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	c.JSON(http.StatusOK, note)
+	c.JSON(http.StatusOK, toJoplinResponse(note))
+}
+
+func toJoplinResponse(note entity.ReadingNote) gin.H {
+	return gin.H{
+		"id":          note.ID,
+		"title":       note.Title,
+		"body":        note.Body,
+		"document_id": note.DocumentID,
+		"source":      note.Source,
+		"source_url":  note.SourceURL,
+		"created_at":  note.CreatedAt,
+		"updated_at":  note.UpdatedAt,
+		"parent_id":   defaultJoplinFolderID,
+	}
 }
 
 func extractDocumentID(payload joplinNotePayload) string {

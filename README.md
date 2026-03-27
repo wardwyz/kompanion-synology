@@ -63,7 +63,32 @@ services:
       KOMPANION_PG_URL: "postgres://XXX:XXX@postgres:5432/postgres"
       KOMPANION_AUTH_USERNAME: XXX
       KOMPANION_AUTH_PASSWORD: XXX
+      KOMPANION_JOPLIN_TOKEN: XXX # 手动设置，供 KOReader Joplin 插件使用
     depends_on:
       - postgres
 ```
 
+
+## Joplin（KOReader 笔记同步）配置
+
+新增了一个兼容 Joplin Clipper API 的接口，用于接收 KOReader 发送的 Markdown 笔记。
+
+1. 在容器中**手动设置** `KOMPANION_JOPLIN_TOKEN`（建议随机字符串，必填）。
+2. 在 KOReader 的 Joplin 插件中配置：
+   - Base URL: `https://your-kompanion.org/joplin`
+   - Token: 你配置的 `KOMPANION_JOPLIN_TOKEN`
+3. 同步后的笔记可在：
+   - 全部笔记：`/notes/`
+   - 单本书详情页：`/books/:bookID`
+
+接口示例（创建笔记）：
+
+```bash
+curl -X POST "http://127.0.0.1:8080/joplin/notes?token=<YOUR_TOKEN>" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "KOReader Note",
+    "body": "# Reading note\n\nSome markdown",
+    "document_id": "<koreader_partial_md5>"
+  }'
+```

@@ -34,3 +34,41 @@ func TestExtractDocumentID(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeJoplinTitle(t *testing.T) {
+	tests := []struct {
+		name string
+		in   joplinNotePayload
+		want string
+	}{
+		{
+			name: "keep provided title",
+			in:   joplinNotePayload{Title: "  Keep Me  "},
+			want: "Keep Me",
+		},
+		{
+			name: "fallback to explicit document id",
+			in:   joplinNotePayload{DocumentID: "doc-1"},
+			want: "KOReader Note doc-1",
+		},
+		{
+			name: "fallback to extracted document id",
+			in:   joplinNotePayload{Body: "KOReader_partial_md5: doc-2"},
+			want: "KOReader Note doc-2",
+		},
+		{
+			name: "generic fallback",
+			in:   joplinNotePayload{},
+			want: "KOReader Note",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := normalizeJoplinTitle(tc.in)
+			if got != tc.want {
+				t.Fatalf("normalizeJoplinTitle() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

@@ -105,3 +105,67 @@ func TestJoplinAPI_InvalidToken(t *testing.T) {
 		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 }
+
+func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	payload := map[string]string{
+		"body": "highlight body",
+	}
+	body, _ := json.Marshal(payload)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/joplin/folders/kompanion/notes?token=test-token", bytes.NewReader(body))
+	createReq.Header.Set("Content-Type", "application/json")
+	createResp := httptest.NewRecorder()
+	r.ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+
+	listReq := httptest.NewRequest(http.MethodGet, "/joplin/folders/kompanion/notes?token=test-token", nil)
+	listResp := httptest.NewRecorder()
+	r.ServeHTTP(listResp, listReq)
+	if listResp.Code != http.StatusOK {
+		t.Fatalf("list status = %d, body = %s", listResp.Code, listResp.Body.String())
+	}
+
+	var out struct {
+		Items []map[string]interface{} `json:"items"`
+	}
+	if err := json.Unmarshal(listResp.Body.Bytes(), &out); err != nil {
+		t.Fatalf("unmarshal list response: %v", err)
+	}
+	if len(out.Items) != 1 {
+		t.Fatalf("expected 1 note, got %d", len(out.Items))
+	}
+}
+
+func TestJoplinAPI_LegacyRootPath(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+
+	joplinRoutes := r.Group("/joplin")
+	joplinRoutes.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(joplinRoutes, noteSvc, logger.New("error"))
+
+	legacyRoutes := r.Group("/")
+	legacyRoutes.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(legacyRoutes, noteSvc, logger.New("error"))
+
+	req := httptest.NewRequest(http.MethodGet, "/ping?token=test-token", nil)
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	if got := resp.Body.String(); got != "JoplinClipperServer" {
+		t.Fatalf("unexpected ping body: %s", got)
+	}
+}

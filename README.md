@@ -77,7 +77,7 @@ services:
 2. 在 KOReader 的 Joplin 插件中配置：
    - Server/Base URL: `https://your-kompanion.org/joplin`
    - Token: 你配置的 `KOMPANION_JOPLIN_TOKEN`
-   - 如果 KOReader 版本只支持 `IP + Port`，无法填写路径，请在反向代理把根路径转发到 `/joplin`，或按 KOReader 官方 wiki 方案做端口转发。
+   - 如果 KOReader 版本只支持 `IP + Port`，无法填写路径，也可以直接填 `http://IP:PORT`（Kompanion 同时兼容 `/joplin/*` 和根路径 `/*` 的 Joplin API）。
 3. 先在浏览器自检（把 TOKEN 换成你的值）：
    - `https://your-kompanion.org/joplin/ping?token=TOKEN` 应返回 `JoplinClipperServer`
    - `https://your-kompanion.org/joplin/folders?token=TOKEN` 应返回包含 `KOReader Notes` 的 JSON

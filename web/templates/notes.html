@@ -17,12 +17,13 @@
                     {{ .DisplayCreatedAt }} 
                     {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
                 </small>
+                <h1>{{ .Title }}</h1>
             </div>
             <form method="post" action="/notes/{{ .ID }}/delete" onsubmit="return confirm('确认删除这条笔记吗？');">
                 <button type="submit">删除</button>
             </form>
         </header>
-        <h2>{{ .Title }}</h2>
+
         <div class="reading-note-body">{{ .BodyMarkdown }}</div>
     </article>
     {{ end }}

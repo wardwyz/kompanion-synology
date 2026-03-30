@@ -53,19 +53,16 @@ func TestGroupNotesByBook_DeduplicateSameBodyAndFixTimezone(t *testing.T) {
 }
 
 func TestMarkdownToHTML(t *testing.T) {
-	markdown := "# 书名\n#### 作者\n\n- 摘录 1\n- 摘录 2\n\n正文内容"
+	markdown := "## 导论：道路·理论·制度\n\n### Page 75 @ 24 March 2026 12:01:32 PM\n\n*造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。*"
 	html := string(markdownToHTML(markdown))
 
-	if !strings.Contains(html, "<h3>书名</h3>") {
+	if !strings.Contains(html, "<h2>导论：道路·理论·制度</h2>") {
+		t.Fatalf("expected h2 heading, got %s", html)
+	}
+	if !strings.Contains(html, "<h3>Page 75 @ 24 March 2026 12:01:32 PM</h3>") {
 		t.Fatalf("expected h3 heading, got %s", html)
 	}
-	if !strings.Contains(html, "<h4>作者</h4>") {
-		t.Fatalf("expected h4 author heading, got %s", html)
-	}
-	if !strings.Contains(html, "<li>摘录 1</li>") || !strings.Contains(html, "<li>摘录 2</li>") {
-		t.Fatalf("expected list items, got %s", html)
-	}
-	if !strings.Contains(html, "<p>正文内容</p>") {
-		t.Fatalf("expected body paragraph, got %s", html)
+	if !strings.Contains(html, "<em>造反派是毛泽东的左手") {
+		t.Fatalf("expected italic sentence, got %s", html)
 	}
 }

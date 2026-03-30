@@ -101,3 +101,14 @@ func (r *PostgresRepo) ListByDocument(ctx context.Context, documentID string, li
 	}
 	return notes, nil
 }
+
+func (r *PostgresRepo) Delete(ctx context.Context, id string) error {
+	res, err := r.Pool.Exec(ctx, `DELETE FROM joplin_note WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("PostgresRepo - Delete - r.Pool.Exec: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return ErrNoteNotFound
+	}
+	return nil
+}

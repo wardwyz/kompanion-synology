@@ -80,3 +80,13 @@ func (r *MemoryRepo) ListByDocument(_ context.Context, documentID string, limit 
 	}
 	return all, nil
 }
+
+func (r *MemoryRepo) Delete(_ context.Context, id string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.items[id]; !ok {
+		return ErrNoteNotFound
+	}
+	delete(r.items, id)
+	return nil
+}

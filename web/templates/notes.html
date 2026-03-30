@@ -2,20 +2,32 @@
 
 {{ define "content" }}
 <h2>阅读笔记</h2>
-<p style="color: var(--text-color-alt);">该页面展示从 KOReader（Joplin 服务）同步过来的 Markdown 笔记。</p>
+<p style="color: var(--text-color-alt);">按 Markdown 格式展示，支持按 <code># 书籍名称</code> 自动分组。</p>
 
-{{ if not .notes }}
+{{ if not .groups }}
 <p>暂无笔记。</p>
 {{ end }}
 
-{{ range .notes }}
-<article class="reading-note">
-    <h4>{{ .Title }}</h4>
-    <small>
-        {{ .CreatedAt.Format "2006-01-02 15:04:05" }}
-        {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
-    </small>
-    <pre>{{ .Body }}</pre>
-</article>
+{{ range .groups }}
+<section class="reading-note-book-group">
+    <h3>{{ .Name }}</h3>
+    {{ range .Notes }}
+    <article class="reading-note">
+        <header class="reading-note-header">
+            <div>
+                <h4>{{ .Title }}</h4>
+                <small>
+                    {{ .DisplayCreatedAt }} (UTC+8)
+                    {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
+                </small>
+            </div>
+            <form method="post" action="/notes/{{ .ID }}/delete" onsubmit="return confirm('确认删除这条笔记吗？');">
+                <button type="submit">删除</button>
+            </form>
+        </header>
+        <pre class="reading-note-body">{{ .BodyMarkdown }}</pre>
+    </article>
+    {{ end }}
+</section>
 {{ end }}
 {{ end }}

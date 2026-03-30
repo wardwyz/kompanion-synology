@@ -15,6 +15,7 @@ type Repo interface {
 	Get(ctx context.Context, id string) (entity.ReadingNote, error)
 	List(ctx context.Context, limit int) ([]entity.ReadingNote, error)
 	ListByDocument(ctx context.Context, documentID string, limit int) ([]entity.ReadingNote, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type Service interface {
@@ -23,4 +24,5 @@ type Service interface {
 	Get(ctx context.Context, id string) (entity.ReadingNote, error)
 	List(ctx context.Context, limit int) ([]entity.ReadingNote, error)
 	ListByDocument(ctx context.Context, documentID string, limit int) ([]entity.ReadingNote, error)
+	Delete(ctx context.Context, id string) error
 }

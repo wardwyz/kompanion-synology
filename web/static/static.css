@@ -85,3 +85,25 @@
   max-height: 20rem;
   overflow: auto;
 }
+
+.reading-note-book-group {
+  margin-bottom: 2rem;
+}
+
+.reading-note-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.reading-note-body {
+  margin-top: 0.75rem;
+}
+
+.reading-note-body p,
+.reading-note-body ul,
+.reading-note-body ol,
+.reading-note-body blockquote {
+  margin: 0.5rem 0;
+}

@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/vanadium23/kompanion/internal/entity"
 )
 
 func TestNotesTemplateRender(t *testing.T) {
@@ -25,11 +23,15 @@ func TestNotesTemplateRender(t *testing.T) {
 	data := map[string]interface{}{
 		"isAuthenticated": true,
 		"startTime":       time.Now(),
-		"notes": []entity.ReadingNote{{
-			Title:      "Example",
-			Body:       "# hello",
-			DocumentID: "doc1",
-			CreatedAt:  time.Now(),
+		"groups": []notesBookGroup{{
+			Name: "Book A",
+			Notes: []readingNoteView{{
+				Title:            "Example",
+				DocumentID:       "doc1",
+				CreatedAt:        time.Now(),
+				DisplayCreatedAt: "2026-03-30 08:00:00",
+				BodyMarkdown:     "# hello",
+			}},
 		}},
 	}
 

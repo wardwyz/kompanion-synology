@@ -53,3 +53,7 @@ func (s *NotesService) Get(ctx context.Context, id string) (entity.ReadingNote, 
 func (s *NotesService) ListByDocument(ctx context.Context, documentID string, limit int) ([]entity.ReadingNote, error) {
 	return s.repo.ListByDocument(ctx, documentID, limit)
 }
+
+func (s *NotesService) Delete(ctx context.Context, id string) error {
+	return s.repo.Delete(ctx, id)
+}

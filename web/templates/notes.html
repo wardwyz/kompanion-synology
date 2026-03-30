@@ -1,7 +1,7 @@
 {{ define "title" }}阅读笔记 - KOmpanion{{ end }}
 
 {{ define "content" }}
-<h2>阅读笔记</h2>
+<h1>阅读笔记</h1>
 
 {{ if not .groups }}
 <p>暂无笔记。</p>
@@ -9,12 +9,10 @@
 
 {{ range .groups }}
 <section class="reading-note-book-group">
-    <h3>{{ .Name }}</h3>
     {{ range .Notes }}
     <article class="reading-note">
         <header class="reading-note-header">
             <div>
-                <h4>{{ .Title }}</h4>
                 <small>
                     {{ .DisplayCreatedAt }} 
                     {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
@@ -24,6 +22,7 @@
                 <button type="submit">删除</button>
             </form>
         </header>
+        <h4>{{ .Title }}</h4>
         <div class="reading-note-body">{{ .BodyMarkdown }}</div>
     </article>
     {{ end }}

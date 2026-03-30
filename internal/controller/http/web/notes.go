@@ -134,7 +134,12 @@ func markdownToHTML(markdown string) template.HTML {
 		}
 
 		switch {
-		case strings.HasPrefix(trimmed, "#### "):
+		case strings.HasPrefix(trimmed, "##### "):
+			closeList()
+			b.WriteString("<h5>")
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "##### "))))
+			b.WriteString("</h5>")
+		case strings.HasPrefix(trimmed, "##### "):
 			closeList()
 			b.WriteString("<h4>")
 			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "#### "))))

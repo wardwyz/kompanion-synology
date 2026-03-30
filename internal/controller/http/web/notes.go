@@ -95,7 +95,7 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 				DocumentID:       selected.note.DocumentID,
 				CreatedAt:        selected.note.CreatedAt,
 				DisplayCreatedAt: selected.note.CreatedAt.In(notesDisplayLocation).Format("2006-01-02 15:04:05"),
-				BodyMarkdown:     template.HTML(template.HTMLEscapeString(selected.body)),
+				BodyMarkdown:     markdownToHTML(selected.body),
 			})
 		}
 		sort.Slice(groupedNotes, func(i, j int) bool { return groupedNotes[i].CreatedAt.After(groupedNotes[j].CreatedAt) })
@@ -107,6 +107,66 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 
 func normalizeNoteBody(body string) string {
 	return strings.TrimSpace(body)
+}
+
+func markdownToHTML(markdown string) template.HTML {
+	if strings.TrimSpace(markdown) == "" {
+		return ""
+	}
+
+	lines := strings.Split(markdown, "\n")
+	var b strings.Builder
+	inList := false
+
+	closeList := func() {
+		if inList {
+			b.WriteString("</ul>")
+			inList = false
+		}
+	}
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			closeList()
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "#### ") {
+			closeList()
+			b.WriteString("<h4>")
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "#### "))))
+			b.WriteString("</h4>")
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "# ") {
+			closeList()
+			b.WriteString("<h3>")
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# "))))
+			b.WriteString("</h3>")
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") {
+			if !inList {
+				b.WriteString("<ul>")
+				inList = true
+			}
+			item := strings.TrimSpace(trimmed[2:])
+			b.WriteString("<li>")
+			b.WriteString(template.HTMLEscapeString(item))
+			b.WriteString("</li>")
+			continue
+		}
+
+		closeList()
+		b.WriteString("<p>")
+		b.WriteString(template.HTMLEscapeString(trimmed))
+		b.WriteString("</p>")
+	}
+	closeList()
+	return template.HTML(b.String())
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

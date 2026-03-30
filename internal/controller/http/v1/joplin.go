@@ -37,6 +37,7 @@ func newJoplinRoutes(handler *gin.RouterGroup, n notes.Service, l logger.Interfa
 	{
 		h.GET("/ping", r.ping)
 		h.GET("/folders", r.listFolders)
+		h.POST("/folders", r.createFolder)
 		h.GET("/folders/:id", r.getFolder)
 		h.GET("/folders/:id/notes", r.listNotes)
 		h.POST("/folders/:id/notes", r.createNote)
@@ -61,6 +62,24 @@ func (r *joplinRoutes) listFolders(c *gin.Context) {
 
 func (r *joplinRoutes) getFolder(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": c.Param("id"), "title": "KOReader Notes"})
+}
+
+func (r *joplinRoutes) createFolder(c *gin.Context) {
+	payload, err := parseJoplinFolderPayload(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	title := strings.TrimSpace(payload.Title)
+	if title == "" {
+		title = "KOReader Notes"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":    defaultJoplinFolderID,
+		"title": title,
+	})
 }
 
 func (r *joplinRoutes) createNote(c *gin.Context) {
@@ -162,6 +181,31 @@ func payloadFromForm(c *gin.Context) joplinNotePayload {
 	}
 }
 
+type joplinFolderPayload struct {
+	Title string `json:"title"`
+}
+
+func parseJoplinFolderPayload(c *gin.Context) (joplinFolderPayload, error) {
+	var payload joplinFolderPayload
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		return joplinFolderPayload{}, err
+	}
+	c.Request.Body = io.NopCloser(strings.NewReader(string(raw)))
+
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return joplinFolderPayload{Title: c.PostForm("title")}, nil
+	}
+
+	if err := json.Unmarshal(raw, &payload); err == nil {
+		return payload, nil
+	}
+
+	return joplinFolderPayload{Title: c.PostForm("title")}, nil
+}
+
 func (r *joplinRoutes) listNotes(c *gin.Context) {
 	items, err := r.notes.List(c.Request.Context(), 200)
 	if err != nil {
@@ -243,6 +287,10 @@ func normalizeJoplinTitle(payload joplinNotePayload) string {
 
 func joplinTokenMiddleware(token string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.Method == http.MethodGet && strings.HasSuffix(c.Request.URL.Path, "/ping") {
+			c.Next()
+			return
+		}
 		if c.Query("token") != token {
 			c.JSON(http.StatusForbidden, gin.H{"error": `Invalid "token" parameter`})
 			c.Abort()

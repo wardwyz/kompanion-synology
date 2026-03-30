@@ -151,11 +151,30 @@ func TestJoplinAPI_InvalidToken(t *testing.T) {
 	jg.Use(joplinTokenMiddleware("test-token"))
 	newJoplinRoutes(jg, noteSvc, logger.New("error"))
 
-	req := httptest.NewRequest(http.MethodGet, "/joplin/ping?token=wrong", nil)
+	req := httptest.NewRequest(http.MethodGet, "/joplin/notes?token=wrong", nil)
 	resp := httptest.NewRecorder()
 	r.ServeHTTP(resp, req)
 	if resp.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+}
+
+func TestJoplinAPI_PingWithoutToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	noteSvc := notes.NewService(notes.NewMemoryRepo())
+	jg := r.Group("/joplin")
+	jg.Use(joplinTokenMiddleware("test-token"))
+	newJoplinRoutes(jg, noteSvc, logger.New("error"))
+
+	req := httptest.NewRequest(http.MethodGet, "/joplin/ping", nil)
+	resp := httptest.NewRecorder()
+	r.ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	if got := resp.Body.String(); got != "JoplinClipperServer" {
+		t.Fatalf("unexpected ping body: %s", got)
 	}
 }
 
@@ -202,6 +221,26 @@ func TestJoplinAPI_FolderNotesEndpoints(t *testing.T) {
 	r.ServeHTTP(folderResp, folderReq)
 	if folderResp.Code != http.StatusOK {
 		t.Fatalf("folder status = %d, body = %s", folderResp.Code, folderResp.Body.String())
+	}
+
+	createFolderBody := strings.NewReader(`{"title":"My KOReader Notes"}`)
+	createFolderReq := httptest.NewRequest(http.MethodPost, "/joplin/folders?token=test-token", createFolderBody)
+	createFolderReq.Header.Set("Content-Type", "application/json")
+	createFolderResp := httptest.NewRecorder()
+	r.ServeHTTP(createFolderResp, createFolderReq)
+	if createFolderResp.Code != http.StatusOK {
+		t.Fatalf("create folder status = %d, body = %s", createFolderResp.Code, createFolderResp.Body.String())
+	}
+
+	var folderOut map[string]interface{}
+	if err := json.Unmarshal(createFolderResp.Body.Bytes(), &folderOut); err != nil {
+		t.Fatalf("unmarshal create folder response: %v", err)
+	}
+	if got := folderOut["id"]; got != "kompanion" {
+		t.Fatalf("expected folder id kompanion, got %v", got)
+	}
+	if got := folderOut["title"]; got != "My KOReader Notes" {
+		t.Fatalf("expected folder title from payload, got %v", got)
 	}
 }
 

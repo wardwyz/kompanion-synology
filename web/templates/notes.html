@@ -2,7 +2,6 @@
 
 {{ define "content" }}
 <h2>阅读笔记</h2>
-<p style="color: var(--text-color-alt);">按 Markdown 格式展示，支持按 <code># 书籍名称</code> 自动分组。</p>
 
 {{ if not .groups }}
 <p>暂无笔记。</p>
@@ -17,7 +16,7 @@
             <div>
                 <h4>{{ .Title }}</h4>
                 <small>
-                    {{ .DisplayCreatedAt }} (UTC+8)
+                    {{ .DisplayCreatedAt }} 
                     {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
                 </small>
             </div>

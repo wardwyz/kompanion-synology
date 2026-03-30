@@ -16,6 +16,7 @@ import (
 
 var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
+var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -132,23 +133,28 @@ func markdownToHTML(markdown string) template.HTML {
 			continue
 		}
 
-		if strings.HasPrefix(trimmed, "#### ") {
+		switch {
+		case strings.HasPrefix(trimmed, "#### "):
 			closeList()
 			b.WriteString("<h4>")
 			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "#### "))))
 			b.WriteString("</h4>")
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "# ") {
+		case strings.HasPrefix(trimmed, "### "):
 			closeList()
 			b.WriteString("<h3>")
-			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# "))))
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))))
 			b.WriteString("</h3>")
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* ") {
+		case strings.HasPrefix(trimmed, "## "):
+			closeList()
+			b.WriteString("<h2>")
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "## "))))
+			b.WriteString("</h2>")
+		case strings.HasPrefix(trimmed, "# "):
+			closeList()
+			b.WriteString("<h1>")
+			b.WriteString(template.HTMLEscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# "))))
+			b.WriteString("</h1>")
+		case strings.HasPrefix(trimmed, "- ") || strings.HasPrefix(trimmed, "* "):
 			if !inList {
 				b.WriteString("<ul>")
 				inList = true
@@ -157,15 +163,21 @@ func markdownToHTML(markdown string) template.HTML {
 			b.WriteString("<li>")
 			b.WriteString(template.HTMLEscapeString(item))
 			b.WriteString("</li>")
-			continue
+		default:
+			closeList()
+			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
+				b.WriteString("<p><em>")
+				b.WriteString(template.HTMLEscapeString(strings.TrimSpace(m[1])))
+				b.WriteString("</em></p>")
+				continue
+			}
+			b.WriteString("<p>")
+			b.WriteString(template.HTMLEscapeString(trimmed))
+			b.WriteString("</p>")
 		}
-
-		closeList()
-		b.WriteString("<p>")
-		b.WriteString(template.HTMLEscapeString(trimmed))
-		b.WriteString("</p>")
 	}
 	closeList()
+
 	return template.HTML(b.String())
 }
 

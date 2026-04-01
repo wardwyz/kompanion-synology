@@ -116,3 +116,33 @@ func TestFilterAndPaginateReadingNotes(t *testing.T) {
 		t.Fatalf("expected totalPages=2, got %v", pagination["totalPages"])
 	}
 }
+
+func TestFilterGroupsByBook(t *testing.T) {
+	groups := []notesBookGroup{
+		{Name: "A", Notes: []readingNoteView{{ID: "1"}}},
+		{Name: "B", Notes: []readingNoteView{{ID: "2"}}},
+	}
+
+	filtered := filterGroupsByBook(groups, "B")
+	if len(filtered) != 1 || filtered[0].Name != "B" {
+		t.Fatalf("expected only group B, got %+v", filtered)
+	}
+}
+
+func TestRegroupByBook(t *testing.T) {
+	notes := []readingNoteView{
+		{ID: "2", BookName: "B"},
+		{ID: "1", BookName: "A"},
+		{ID: "3", BookName: "B"},
+	}
+	grouped := regroupByBook(notes)
+	if len(grouped) != 2 {
+		t.Fatalf("expected 2 groups, got %d", len(grouped))
+	}
+	if grouped[0].Name != "A" || grouped[1].Name != "B" {
+		t.Fatalf("expected sorted group names A,B got %s,%s", grouped[0].Name, grouped[1].Name)
+	}
+	if len(grouped[1].Notes) != 2 {
+		t.Fatalf("expected 2 notes in group B, got %d", len(grouped[1].Notes))
+	}
+}

@@ -74,9 +74,10 @@
 
 .reading-note {
   border: 1px solid var(--muted-border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem 0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1rem 0 1.25rem;
+  background: color-mix(in srgb, var(--background-alt, #f8f8f8) 55%, transparent);
 }
 
 .reading-note pre {
@@ -86,8 +87,18 @@
   overflow: auto;
 }
 
+.reading-note-book-groups {
+  margin-top: 1.5rem;
+}
+
 .reading-note-book-group {
   margin-bottom: 2rem;
+}
+
+.reading-note-book-title {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--muted-border-color);
+  padding-bottom: 0.5rem;
 }
 
 .reading-note-header {
@@ -99,6 +110,7 @@
 
 .reading-note-body {
   margin-top: 0.75rem;
+  line-height: 1.7;
 }
 
 .reading-note-body p,
@@ -106,4 +118,16 @@
 .reading-note-body ol,
 .reading-note-body blockquote {
   margin: 0.5rem 0;
+}
+
+.notes-toolbar {
+  margin-bottom: 1rem;
+}
+
+.reading-note-meta {
+  color: var(--text-color-alt);
+}
+
+.notes-filter-form {
+  margin-bottom: 1rem;
 }

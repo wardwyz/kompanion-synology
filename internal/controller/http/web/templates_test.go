@@ -27,11 +27,12 @@ func TestNotesTemplateRender(t *testing.T) {
 		"bookOptions":     []string{"Book A"},
 		"notes": []readingNoteView{{
 			BookName:         "Book A",
-			Title:            "Example",
+			Author:           "Author A",
+			Content:          "内容示例",
+			Location:         "Page 1",
 			DocumentID:       "doc1",
 			CreatedAt:        time.Now(),
 			DisplayCreatedAt: "2026-03-30 08:00:00",
-			BodyMarkdown:     "# hello",
 		}},
 		"pagination": map[string]interface{}{
 			"currentPage": 1,
@@ -42,11 +43,13 @@ func TestNotesTemplateRender(t *testing.T) {
 		"groups": []notesBookGroup{{
 			Name: "Book A",
 			Notes: []readingNoteView{{
-				Title:            "Example",
+				BookName:         "Book A",
+				Author:           "Author A",
+				Content:          "内容示例",
+				Location:         "Page 1",
 				DocumentID:       "doc1",
 				CreatedAt:        time.Now(),
 				DisplayCreatedAt: "2026-03-30 08:00:00",
-				BodyMarkdown:     "# hello",
 			}},
 		}},
 	}
@@ -57,7 +60,7 @@ func TestNotesTemplateRender(t *testing.T) {
 	}
 
 	html := out.String()
-	if !strings.Contains(html, "阅读笔记") || !strings.Contains(html, "Example") {
+	if !strings.Contains(html, "阅读笔记") || !strings.Contains(html, "Book A--Author A") || !strings.Contains(html, "内容示例") {
 		t.Fatalf("rendered html missing expected content: %s", html)
 	}
 }

@@ -34,11 +34,13 @@ type readingNoteView struct {
 	ID               string
 	BookName         string
 	Title            string
+	Author           string
+	Location         string
+	Content          string
 	DocumentID       string
 	DisplayCreatedAt string
 	CreatedAt        time.Time
 	BodyRaw          string
-	BodyMarkdown     template.HTML
 }
 
 func newNotesRoutes(handler *gin.RouterGroup, noteSvc notes.Service, l logger.Interface) {
@@ -139,15 +141,18 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 	for name, deduped := range groupedUnique {
 		groupedNotes := make([]readingNoteView, 0, len(deduped))
 		for _, selected := range deduped {
+			author, location, content := parseStructuredReadingNote(selected.body)
 			groupedNotes = append(groupedNotes, readingNoteView{
 				ID:               selected.note.ID,
 				BookName:         name,
 				Title:            selected.note.Title,
+				Author:           author,
+				Location:         location,
+				Content:          content,
 				DocumentID:       selected.note.DocumentID,
 				CreatedAt:        selected.note.CreatedAt,
 				DisplayCreatedAt: selected.note.CreatedAt.In(notesDisplayLocation).Format("2006-01-02 15:04:05"),
 				BodyRaw:          selected.body,
-				BodyMarkdown:     markdownToHTML(selected.body),
 			})
 		}
 		sort.Slice(groupedNotes, func(i, j int) bool { return groupedNotes[i].CreatedAt.After(groupedNotes[j].CreatedAt) })
@@ -168,27 +173,24 @@ func notesToMarkdown(groups []notesBookGroup) string {
 		b.WriteString(group.Name)
 		b.WriteString("\n\n")
 		for ni, note := range group.Notes {
-			b.WriteString("## ")
-			if strings.TrimSpace(note.Title) != "" {
-				b.WriteString(note.Title)
-			} else {
-				b.WriteString("未命名笔记")
-			}
-			b.WriteString("\n\n")
-			b.WriteString("- 时间: ")
-			b.WriteString(note.DisplayCreatedAt)
-			b.WriteString(" (UTC+8)\n")
-			if note.DocumentID != "" {
-				b.WriteString("- 文档标识: `")
-				b.WriteString(note.DocumentID)
-				b.WriteString("`\n")
-			}
-			b.WriteString("\n")
-			body := strings.TrimSpace(note.BodyRaw)
-			if body != "" {
-				b.WriteString(body)
+			if note.Author != "" {
+				b.WriteString("## ")
+				b.WriteString(group.Name)
+				b.WriteString("--")
+				b.WriteString(note.Author)
 				b.WriteString("\n\n")
 			}
+			if note.Content != "" {
+				b.WriteString(note.Content)
+			}
+			if note.Location != "" {
+				if note.Content != "" {
+					b.WriteString("--")
+				}
+				b.WriteString(note.Location)
+			}
+			b.WriteString("\n")
+
 			if ni < len(group.Notes)-1 {
 				b.WriteString("---\n\n")
 			}
@@ -375,6 +377,34 @@ func markdownToHTML(markdown string) template.HTML {
 	closeList()
 
 	return template.HTML(b.String())
+}
+
+func parseStructuredReadingNote(markdown string) (author, location, content string) {
+	lines := strings.Split(markdown, "\n")
+	contentParts := make([]string, 0)
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(trimmed, "##### "):
+			author = strings.TrimSpace(strings.TrimPrefix(trimmed, "##### "))
+		case strings.HasPrefix(trimmed, "### "):
+			location = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
+		default:
+			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
+				text := strings.TrimSpace(m[1])
+				if text != "" {
+					contentParts = append(contentParts, text)
+				}
+				continue
+			}
+			contentParts = append(contentParts, trimmed)
+		}
+	}
+	content = strings.Join(contentParts, " ")
+	return author, location, content
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

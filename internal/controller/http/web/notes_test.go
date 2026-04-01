@@ -52,18 +52,18 @@ func TestGroupNotesByBook_DeduplicateSameBodyAndFixTimezone(t *testing.T) {
 	}
 }
 
-func TestMarkdownToHTML(t *testing.T) {
-	markdown := "## 导论：道路·理论·制度\n\n### Page 75 @ 24 March 2026 12:01:32 PM\n\n*造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。*"
-	html := string(markdownToHTML(markdown))
+func TestParseStructuredReadingNote(t *testing.T) {
+	markdown := "##### 毛泽东\n\n### Page 75 @ 24 March 2026 12:01:32 PM\n\n*造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。*"
+	author, location, content := parseStructuredReadingNote(markdown)
 
-	if !strings.Contains(html, "<h2>导论：道路·理论·制度</h2>") {
-		t.Fatalf("expected h2 heading, got %s", html)
+	if author != "毛泽东" {
+		t.Fatalf("expected author, got %q", author)
 	}
-	if !strings.Contains(html, "<h3>Page 75 @ 24 March 2026 12:01:32 PM</h3>") {
-		t.Fatalf("expected h3 heading, got %s", html)
+	if location != "Page 75 @ 24 March 2026 12:01:32 PM" {
+		t.Fatalf("expected location, got %q", location)
 	}
-	if !strings.Contains(html, "<em>造反派是毛泽东的左手") {
-		t.Fatalf("expected italic sentence, got %s", html)
+	if content != "造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。" {
+		t.Fatalf("expected note content, got %q", content)
 	}
 }
 
@@ -73,10 +73,9 @@ func TestNotesToMarkdown(t *testing.T) {
 			Name: "三国演义",
 			Notes: []readingNoteView{
 				{
-					Title:            "摘抄",
-					DocumentID:       "doc-1",
-					DisplayCreatedAt: "2026-03-30 08:01:00",
-					BodyRaw:          "### Page 1\n\n- 桃园结义",
+					Author:   "罗贯中",
+					Location: "Page 1",
+					Content:  "桃园结义",
 				},
 			},
 		},
@@ -85,14 +84,11 @@ func TestNotesToMarkdown(t *testing.T) {
 	if !strings.Contains(out, "# 三国演义") {
 		t.Fatalf("expected book heading, got %s", out)
 	}
-	if !strings.Contains(out, "## 摘抄") {
-		t.Fatalf("expected note title heading, got %s", out)
+	if !strings.Contains(out, "## 三国演义--罗贯中") {
+		t.Fatalf("expected book and author heading, got %s", out)
 	}
-	if !strings.Contains(out, "- 文档标识: `doc-1`") {
-		t.Fatalf("expected document id metadata, got %s", out)
-	}
-	if !strings.Contains(out, "### Page 1") {
-		t.Fatalf("expected markdown body preserved, got %s", out)
+	if !strings.Contains(out, "桃园结义--Page 1") {
+		t.Fatalf("expected body and location format, got %s", out)
 	}
 }
 

@@ -66,3 +66,53 @@ func TestMarkdownToHTML(t *testing.T) {
 		t.Fatalf("expected italic sentence, got %s", html)
 	}
 }
+
+func TestNotesToMarkdown(t *testing.T) {
+	out := notesToMarkdown([]notesBookGroup{
+		{
+			Name: "三国演义",
+			Notes: []readingNoteView{
+				{
+					Title:            "摘抄",
+					DocumentID:       "doc-1",
+					DisplayCreatedAt: "2026-03-30 08:01:00",
+					BodyRaw:          "### Page 1\n\n- 桃园结义",
+				},
+			},
+		},
+	})
+
+	if !strings.Contains(out, "# 三国演义") {
+		t.Fatalf("expected book heading, got %s", out)
+	}
+	if !strings.Contains(out, "## 摘抄") {
+		t.Fatalf("expected note title heading, got %s", out)
+	}
+	if !strings.Contains(out, "- 文档标识: `doc-1`") {
+		t.Fatalf("expected document id metadata, got %s", out)
+	}
+	if !strings.Contains(out, "### Page 1") {
+		t.Fatalf("expected markdown body preserved, got %s", out)
+	}
+}
+
+func TestFilterAndPaginateReadingNotes(t *testing.T) {
+	all := []readingNoteView{
+		{ID: "1", BookName: "A", CreatedAt: time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)},
+		{ID: "2", BookName: "B", CreatedAt: time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)},
+		{ID: "3", BookName: "A", CreatedAt: time.Date(2026, 3, 3, 0, 0, 0, 0, time.UTC)},
+	}
+
+	filtered := filterNotesByBook(all, "A")
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 notes for book A, got %d", len(filtered))
+	}
+
+	paged, pagination := paginateReadingNotes(filtered, 1, 1)
+	if len(paged) != 1 {
+		t.Fatalf("expected 1 note in paged output, got %d", len(paged))
+	}
+	if pagination["totalPages"] != 2 {
+		t.Fatalf("expected totalPages=2, got %v", pagination["totalPages"])
+	}
+}

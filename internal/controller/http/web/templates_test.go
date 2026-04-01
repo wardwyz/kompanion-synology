@@ -23,6 +23,22 @@ func TestNotesTemplateRender(t *testing.T) {
 	data := map[string]interface{}{
 		"isAuthenticated": true,
 		"startTime":       time.Now(),
+		"selectedBook":    "all",
+		"bookOptions":     []string{"Book A"},
+		"notes": []readingNoteView{{
+			BookName:         "Book A",
+			Title:            "Example",
+			DocumentID:       "doc1",
+			CreatedAt:        time.Now(),
+			DisplayCreatedAt: "2026-03-30 08:00:00",
+			BodyMarkdown:     "# hello",
+		}},
+		"pagination": map[string]interface{}{
+			"currentPage": 1,
+			"totalPages":  1,
+			"hasPrev":     false,
+			"hasNext":     false,
+		},
 		"groups": []notesBookGroup{{
 			Name: "Book A",
 			Notes: []readingNoteView{{

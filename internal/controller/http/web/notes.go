@@ -1,10 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,16 +32,19 @@ type notesBookGroup struct {
 
 type readingNoteView struct {
 	ID               string
+	BookName         string
 	Title            string
 	DocumentID       string
 	DisplayCreatedAt string
 	CreatedAt        time.Time
+	BodyRaw          string
 	BodyMarkdown     template.HTML
 }
 
 func newNotesRoutes(handler *gin.RouterGroup, noteSvc notes.Service, l logger.Interface) {
 	r := &notesRoutes{notes: noteSvc, logger: l}
 	handler.GET("/", r.list)
+	handler.GET("/export.md", r.exportMarkdown)
 	handler.POST("/:id/delete", r.delete)
 }
 
@@ -52,7 +57,38 @@ func (r *notesRoutes) list(c *gin.Context) {
 	}
 
 	groups := r.groupNotesByBook(items)
-	c.HTML(http.StatusOK, "notes", passStandartContext(c, gin.H{"groups": groups}))
+	selectedBook := strings.TrimSpace(c.DefaultQuery("book", "all"))
+	page := parsePositiveInt(c.Query("page"), 1)
+	perPage := 20
+
+	bookOptions := make([]string, 0, len(groups))
+	bookOptionSet := make(map[string]struct{}, len(groups))
+	for _, group := range groups {
+		if len(group.Notes) == 0 {
+			continue
+		}
+		bookOptions = append(bookOptions, group.Name)
+		bookOptionSet[group.Name] = struct{}{}
+	}
+	if selectedBook != "all" {
+		if _, ok := bookOptionSet[selectedBook]; !ok {
+			selectedBook = "all"
+		}
+	}
+
+	visibleNotes := flattenNotes(groups)
+	if selectedBook != "" && selectedBook != "all" {
+		visibleNotes = filterNotesByBook(visibleNotes, selectedBook)
+	}
+	pagedNotes, pagination := paginateReadingNotes(visibleNotes, page, perPage)
+
+	c.HTML(http.StatusOK, "notes", passStandartContext(c, gin.H{
+		"groups":       groups,
+		"notes":        pagedNotes,
+		"bookOptions":  bookOptions,
+		"selectedBook": selectedBook,
+		"pagination":   pagination,
+	}))
 }
 
 func (r *notesRoutes) delete(c *gin.Context) {
@@ -62,6 +98,20 @@ func (r *notesRoutes) delete(c *gin.Context) {
 		return
 	}
 	c.Redirect(http.StatusFound, "/notes/")
+}
+
+func (r *notesRoutes) exportMarkdown(c *gin.Context) {
+	items, err := r.notes.List(c.Request.Context(), 200)
+	if err != nil {
+		r.logger.Error(err, "failed to list notes for markdown export")
+		c.HTML(http.StatusInternalServerError, "error", passStandartContext(c, gin.H{"error": err.Error()}))
+		return
+	}
+
+	groups := r.groupNotesByBook(items)
+	filename := fmt.Sprintf("reading-notes-%s.md", time.Now().UTC().Format("20060102-150405"))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	c.Data(http.StatusOK, "text/markdown; charset=utf-8", []byte(notesToMarkdown(groups)))
 }
 
 func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGroup {
@@ -92,10 +142,12 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 		for _, selected := range deduped {
 			groupedNotes = append(groupedNotes, readingNoteView{
 				ID:               selected.note.ID,
+				BookName:         name,
 				Title:            selected.note.Title,
 				DocumentID:       selected.note.DocumentID,
 				CreatedAt:        selected.note.CreatedAt,
 				DisplayCreatedAt: selected.note.CreatedAt.In(notesDisplayLocation).Format("2006-01-02 15:04:05"),
+				BodyRaw:          selected.body,
 				BodyMarkdown:     markdownToHTML(selected.body),
 			})
 		}
@@ -108,6 +160,111 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 
 func normalizeNoteBody(body string) string {
 	return strings.TrimSpace(body)
+}
+
+func notesToMarkdown(groups []notesBookGroup) string {
+	var b strings.Builder
+	for gi, group := range groups {
+		b.WriteString("# ")
+		b.WriteString(group.Name)
+		b.WriteString("\n\n")
+		for ni, note := range group.Notes {
+			b.WriteString("## ")
+			if strings.TrimSpace(note.Title) != "" {
+				b.WriteString(note.Title)
+			} else {
+				b.WriteString("未命名笔记")
+			}
+			b.WriteString("\n\n")
+			b.WriteString("- 时间: ")
+			b.WriteString(note.DisplayCreatedAt)
+			b.WriteString(" (UTC+8)\n")
+			if note.DocumentID != "" {
+				b.WriteString("- 文档标识: `")
+				b.WriteString(note.DocumentID)
+				b.WriteString("`\n")
+			}
+			b.WriteString("\n")
+			body := strings.TrimSpace(note.BodyRaw)
+			if body != "" {
+				b.WriteString(body)
+				b.WriteString("\n\n")
+			}
+			if ni < len(group.Notes)-1 {
+				b.WriteString("---\n\n")
+			}
+		}
+		if gi < len(groups)-1 {
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
+func parsePositiveInt(raw string, fallback int) int {
+	if value, err := strconv.Atoi(strings.TrimSpace(raw)); err == nil && value > 0 {
+		return value
+	}
+	return fallback
+}
+
+func flattenNotes(groups []notesBookGroup) []readingNoteView {
+	out := make([]readingNoteView, 0)
+	for _, group := range groups {
+		out = append(out, group.Notes...)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
+	return out
+}
+
+func filterNotesByBook(notes []readingNoteView, bookName string) []readingNoteView {
+	if bookName == "" || bookName == "all" {
+		return notes
+	}
+	filtered := make([]readingNoteView, 0, len(notes))
+	for _, note := range notes {
+		if note.BookName == bookName {
+			filtered = append(filtered, note)
+		}
+	}
+	return filtered
+}
+
+func paginateReadingNotes(notes []readingNoteView, page, perPage int) ([]readingNoteView, gin.H) {
+	if perPage <= 0 {
+		perPage = 20
+	}
+	total := len(notes)
+	totalPages := 1
+	if total > 0 {
+		totalPages = (total + perPage - 1) / perPage
+	}
+	if page < 1 {
+		page = 1
+	}
+	if page > totalPages {
+		page = totalPages
+	}
+	start := (page - 1) * perPage
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	paged := make([]readingNoteView, 0)
+	if total > 0 && start < total {
+		paged = notes[start:end]
+	}
+
+	return paged, gin.H{
+		"currentPage": page,
+		"perPage":     perPage,
+		"totalPages":  totalPages,
+		"hasNext":     page < totalPages,
+		"hasPrev":     page > 1,
+		"nextPage":    page + 1,
+		"prevPage":    page - 1,
+	}
 }
 
 func markdownToHTML(markdown string) template.HTML {

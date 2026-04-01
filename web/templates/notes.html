@@ -2,18 +2,32 @@
 
 {{ define "content" }}
 <h1>阅读笔记</h1>
+<p><a href="/notes/export.md">导出为 Markdown</a></p>
 
-{{ if not .groups }}
+<form method="get" action="/notes/" class="grid">
+    <div>
+        <label for="book">按书籍筛选</label>
+        <select name="book" id="book">
+            <option value="all" {{ if or (eq .selectedBook "") (eq .selectedBook "all") }}selected{{ end }}>全部书籍</option>
+            {{ range .bookOptions }}
+            <option value="{{ . }}" {{ if eq $.selectedBook . }}selected{{ end }}>{{ . }}</option>
+            {{ end }}
+        </select>
+    </div>
+    <button type="submit">筛选</button>
+</form>
+
+{{ if not .notes }}
 <p>暂无笔记。</p>
 {{ end }}
 
-{{ range .groups }}
 <section class="reading-note-book-group">
-    {{ range .Notes }}
+    {{ range .notes }}
     <article class="reading-note">
         <header class="reading-note-header">
             <div>
                 <small>
+                    {{ .BookName }} ·
                     {{ .DisplayCreatedAt }} 
                     {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
                 </small>
@@ -28,5 +42,24 @@
     </article>
     {{ end }}
 </section>
+
+{{ with .pagination }}
+<nav class="pagination" role="navigation" aria-label="分页">
+    {{ if .hasPrev }}
+    <a href="?book={{ $.selectedBook }}&page={{ .prevPage }}" class="pagination-prev">上一页</a>
+    {{ end }}
+
+    {{ if .hasNext }}
+    <a href="?book={{ $.selectedBook }}&page={{ .nextPage }}" class="pagination-next">下一页</a>
+    {{ end }}
+
+    <ul class="pagination-list">
+        <li>
+            <a href="?book={{ $.selectedBook }}&page={{ .currentPage }}" class="pagination-link is-current">
+                {{ .currentPage }} / {{ .totalPages }}
+            </a>
+        </li>
+    </ul>
+</nav>
 {{ end }}
 {{ end }}

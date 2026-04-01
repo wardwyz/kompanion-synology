@@ -441,6 +441,9 @@ func TestHTTPKompanionOPDS(t *testing.T) {
 		Send().Headers("Authorization").Add(basicAuth),
 		Expect().Status().Equal(http.StatusOK),
 		Expect().Body().String().Contains("/opds/newest"),
+		Expect().Body().String().Contains("/opds/series"),
+		Expect().Body().String().Contains("/opds/author"),
+		Expect().Body().String().Contains("/opds/publisher"),
 	)
 	// list newest books
 	Test(t,
@@ -449,6 +452,44 @@ func TestHTTPKompanionOPDS(t *testing.T) {
 		Send().Headers("Authorization").Add(basicAuth),
 		Expect().Status().Equal(http.StatusOK),
 		Expect().Body().String().Contains("/opds/newest"),
+	)
+	// list books by series
+	Test(t,
+		Description("Kompanion Books by Series via OPDS"),
+		Get(basePath+"/opds/series"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
+		Expect().Body().String().Contains("/opds/series/books"),
+		Expect().Body().String().Contains("%E6%9C%AA%E5%88%86%E7%B1%BB"),
+	)
+	Test(t,
+		Description("Kompanion Uncategorized Series via OPDS"),
+		Get(basePath+"/opds/series/books?name=%E6%9C%AA%E5%88%86%E7%B1%BB"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
+	)
+	// list books by author
+	Test(t,
+		Description("Kompanion Books by Author via OPDS"),
+		Get(basePath+"/opds/author"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
+		Expect().Body().String().Contains("/opds/author/books"),
+	)
+	// list books by publisher
+	Test(t,
+		Description("Kompanion Books by Publisher via OPDS"),
+		Get(basePath+"/opds/publisher"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
+		Expect().Body().String().Contains("/opds/publisher/books"),
+		Expect().Body().String().Contains("%E6%9C%AA%E5%88%86%E7%B1%BB"),
+	)
+	Test(t,
+		Description("Kompanion Uncategorized Publisher via OPDS"),
+		Get(basePath+"/opds/publisher/books?name=%E6%9C%AA%E5%88%86%E7%B1%BB"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
 	)
 	// download book
 	Test(t,

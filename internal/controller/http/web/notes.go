@@ -19,6 +19,8 @@ import (
 var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
+var markdownAuthorPattern = regexp.MustCompile(`(?m)^#####\s+(.+?)\s*$`)
+var markdownLocationOrItalicPattern = regexp.MustCompile(`(?s)###\s+([^\n]+)|\*([^*]+)\*`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -380,31 +382,57 @@ func markdownToHTML(markdown string) template.HTML {
 }
 
 func parseStructuredReadingNote(markdown string) (author, location, content string) {
-	lines := strings.Split(markdown, "\n")
-	contentParts := make([]string, 0)
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
+	normalized := strings.ReplaceAll(markdown, "\r\n", "\n")
+	if idx := strings.Index(normalized, "\n## "); idx >= 0 {
+		normalized = normalized[:idx]
+	} else if strings.HasPrefix(strings.TrimSpace(normalized), "## ") {
+		normalized = ""
+	}
+
+	if m := markdownAuthorPattern.FindStringSubmatch(normalized); len(m) == 2 {
+		author = strings.TrimSpace(m[1])
+	}
+
+	type notePart struct {
+		text     string
+		location string
+	}
+	parts := make([]notePart, 0)
+	currentLocation := ""
+
+	matches := markdownLocationOrItalicPattern.FindAllStringSubmatch(normalized, -1)
+	for _, m := range matches {
+		if len(m) < 3 {
 			continue
 		}
-		switch {
-		case strings.HasPrefix(trimmed, "##### "):
-			author = strings.TrimSpace(strings.TrimPrefix(trimmed, "##### "))
-		case strings.HasPrefix(trimmed, "### "):
-			location = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
-		default:
-			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
-				text := strings.TrimSpace(m[1])
-				if text != "" {
-					contentParts = append(contentParts, text)
-				}
-				continue
-			}
-			contentParts = append(contentParts, trimmed)
+		if strings.TrimSpace(m[1]) != "" {
+			currentLocation = strings.TrimSpace(m[1])
+			location = currentLocation
+			continue
 		}
+		text := strings.TrimSpace(m[2])
+		if text == "" {
+			continue
+		}
+		parts = append(parts, notePart{text: text, location: currentLocation})
 	}
-	content = strings.Join(contentParts, " ")
-	return author, location, content
+
+	if len(parts) == 0 {
+		return author, location, ""
+	}
+	if len(parts) == 1 {
+		return author, parts[0].location, parts[0].text
+	}
+
+	contentParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part.location != "" {
+			contentParts = append(contentParts, part.text+"--"+part.location)
+			continue
+		}
+		contentParts = append(contentParts, part.text)
+	}
+	return author, "", strings.Join(contentParts, "\n")
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

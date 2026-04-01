@@ -111,6 +111,7 @@
 .reading-note-body {
   margin-top: 0.75rem;
   line-height: 1.7;
+  white-space: pre-line;
 }
 
 .reading-note-location {

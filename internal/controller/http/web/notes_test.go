@@ -75,6 +75,14 @@ func TestLocalizeReadingLocation(t *testing.T) {
 	}
 }
 
+func TestLocalizeReadingLocation_PageOnly(t *testing.T) {
+	got := localizeReadingLocation("Page 4")
+	want := "第四页"
+	if got != want {
+		t.Fatalf("expected %q, got %q", want, got)
+	}
+}
+
 func TestNotesToMarkdown(t *testing.T) {
 	out := notesToMarkdown([]notesBookGroup{
 		{
@@ -95,7 +103,7 @@ func TestNotesToMarkdown(t *testing.T) {
 	if !strings.Contains(out, "## 三国演义--罗贯中") {
 		t.Fatalf("expected book and author heading, got %s", out)
 	}
-	if !strings.Contains(out, "桃园结义--Page 1") {
+	if !strings.Contains(out, "桃园结义--第一页") {
 		t.Fatalf("expected body and location format, got %s", out)
 	}
 }

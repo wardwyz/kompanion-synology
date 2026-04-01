@@ -20,6 +20,7 @@ var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
 var markdownPageLocationPattern = regexp.MustCompile(`(?i)^Page\s+(\d+)\s+@\s+(.+)$`)
+var markdownPageOnlyPattern = regexp.MustCompile(`(?i)^Page\s+(\d+)$`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -188,7 +189,7 @@ func notesToMarkdown(groups []notesBookGroup) string {
 				if note.Content != "" {
 					b.WriteString("--")
 				}
-				b.WriteString(note.Location)
+				b.WriteString(localizeReadingLocation(note.Location))
 			}
 			b.WriteString("\n")
 
@@ -412,6 +413,14 @@ func localizeReadingLocation(location string) string {
 	location = strings.TrimSpace(location)
 	m := markdownPageLocationPattern.FindStringSubmatch(location)
 	if len(m) != 3 {
+		onlyPageMatch := markdownPageOnlyPattern.FindStringSubmatch(location)
+		if len(onlyPageMatch) == 2 {
+			pageNumber, err := strconv.Atoi(onlyPageMatch[1])
+			if err != nil {
+				return location
+			}
+			return "第" + intToChineseNumber(pageNumber) + "页"
+		}
 		return location
 	}
 

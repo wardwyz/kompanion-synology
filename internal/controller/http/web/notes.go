@@ -173,27 +173,24 @@ func notesToMarkdown(groups []notesBookGroup) string {
 		b.WriteString(group.Name)
 		b.WriteString("\n\n")
 		for ni, note := range group.Notes {
-			b.WriteString("## ")
-			if strings.TrimSpace(note.Title) != "" {
-				b.WriteString(note.Title)
-			} else {
-				b.WriteString("未命名笔记")
-			}
-			b.WriteString("\n\n")
-			b.WriteString("- 时间: ")
-			b.WriteString(note.DisplayCreatedAt)
-			b.WriteString(" (UTC+8)\n")
-			if note.DocumentID != "" {
-				b.WriteString("- 文档标识: `")
-				b.WriteString(note.DocumentID)
-				b.WriteString("`\n")
-			}
-			b.WriteString("\n")
-			body := strings.TrimSpace(note.BodyRaw)
-			if body != "" {
-				b.WriteString(body)
+			if note.Author != "" {
+				b.WriteString("## ")
+				b.WriteString(group.Name)
+				b.WriteString("--")
+				b.WriteString(note.Author)
 				b.WriteString("\n\n")
 			}
+			if note.Content != "" {
+				b.WriteString(note.Content)
+			}
+			if note.Location != "" {
+				if note.Content != "" {
+					b.WriteString("--")
+				}
+				b.WriteString(note.Location)
+			}
+			b.WriteString("\n")
+
 			if ni < len(group.Notes)-1 {
 				b.WriteString("---\n\n")
 			}

@@ -73,10 +73,9 @@ func TestNotesToMarkdown(t *testing.T) {
 			Name: "三国演义",
 			Notes: []readingNoteView{
 				{
-					Title:            "摘抄",
-					DocumentID:       "doc-1",
-					DisplayCreatedAt: "2026-03-30 08:01:00",
-					BodyRaw:          "### Page 1\n\n- 桃园结义",
+					Author:   "罗贯中",
+					Location: "Page 1",
+					Content:  "桃园结义",
 				},
 			},
 		},
@@ -85,14 +84,11 @@ func TestNotesToMarkdown(t *testing.T) {
 	if !strings.Contains(out, "# 三国演义") {
 		t.Fatalf("expected book heading, got %s", out)
 	}
-	if !strings.Contains(out, "## 摘抄") {
-		t.Fatalf("expected note title heading, got %s", out)
+	if !strings.Contains(out, "## 三国演义--罗贯中") {
+		t.Fatalf("expected book and author heading, got %s", out)
 	}
-	if !strings.Contains(out, "- 文档标识: `doc-1`") {
-		t.Fatalf("expected document id metadata, got %s", out)
-	}
-	if !strings.Contains(out, "### Page 1") {
-		t.Fatalf("expected markdown body preserved, got %s", out)
+	if !strings.Contains(out, "桃园结义--Page 1") {
+		t.Fatalf("expected body and location format, got %s", out)
 	}
 }
 

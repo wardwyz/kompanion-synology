@@ -69,10 +69,25 @@ func TestParseStructuredReadingNote(t *testing.T) {
 
 func TestParseStructuredReadingNote_MultiParagraphAndIgnoreSecondLevelHeading(t *testing.T) {
 	markdown := "##### 作者A\n\n### Page 12\n\n*第一段内容*\n\n*第二段内容*\n\n## 不需要的部分\n*第三段不应该出现*"
-	_, _, content := parseStructuredReadingNote(markdown)
+	_, location, content := parseStructuredReadingNote(markdown)
 
-	if content != "第一段内容\n第二段内容" {
+	if location != "" {
+		t.Fatalf("expected empty location when multiple note parts are present, got %q", location)
+	}
+	if content != "第一段内容--Page 12\n第二段内容--Page 12" {
 		t.Fatalf("expected multiline italic content before second-level heading, got %q", content)
+	}
+}
+
+func TestParseStructuredReadingNote_MultipleLocationsInTemplate(t *testing.T) {
+	markdown := "### Page 98 @ 24 March 2026 12:33:24 PM\n*第一条*\n### Page 117 @ 24 March 2026 01:08:32 PM\n*第二条*"
+	_, location, content := parseStructuredReadingNote(markdown)
+
+	if location != "" {
+		t.Fatalf("expected empty location when multiple highlights are present, got %q", location)
+	}
+	if content != "第一条--Page 98 @ 24 March 2026 12:33:24 PM\n第二条--Page 117 @ 24 March 2026 01:08:32 PM" {
+		t.Fatalf("expected every highlight to include its own location, got %q", content)
 	}
 }
 

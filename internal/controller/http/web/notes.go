@@ -19,6 +19,8 @@ import (
 var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
+var markdownAuthorPattern = regexp.MustCompile(`(?m)^#####\s+(.+?)\s*$`)
+var markdownLocationOrItalicPattern = regexp.MustCompile(`(?s)###\s+([^\n]+)|\*([^*]+)\*`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -380,73 +382,57 @@ func markdownToHTML(markdown string) template.HTML {
 }
 
 func parseStructuredReadingNote(markdown string) (author, location, content string) {
-	lines := strings.Split(markdown, "\n")
-	contentParts := make([]string, 0)
-	inItalicBlock := false
-	var italicBuilder strings.Builder
-
-	flushItalicBlock := func() {
-		text := strings.TrimSpace(italicBuilder.String())
-		if text != "" {
-			contentParts = append(contentParts, text)
-		}
-		italicBuilder.Reset()
-		inItalicBlock = false
+	normalized := strings.ReplaceAll(markdown, "\r\n", "\n")
+	if idx := strings.Index(normalized, "\n## "); idx >= 0 {
+		normalized = normalized[:idx]
+	} else if strings.HasPrefix(strings.TrimSpace(normalized), "## ") {
+		normalized = ""
 	}
 
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
+	if m := markdownAuthorPattern.FindStringSubmatch(normalized); len(m) == 2 {
+		author = strings.TrimSpace(m[1])
+	}
+
+	type notePart struct {
+		text     string
+		location string
+	}
+	parts := make([]notePart, 0)
+	currentLocation := ""
+
+	matches := markdownLocationOrItalicPattern.FindAllStringSubmatch(normalized, -1)
+	for _, m := range matches {
+		if len(m) < 3 {
 			continue
 		}
-		if strings.HasPrefix(trimmed, "## ") {
-			break
+		if strings.TrimSpace(m[1]) != "" {
+			currentLocation = strings.TrimSpace(m[1])
+			location = currentLocation
+			continue
 		}
-		switch {
-		case strings.HasPrefix(trimmed, "##### "):
-			author = strings.TrimSpace(strings.TrimPrefix(trimmed, "##### "))
-		case strings.HasPrefix(trimmed, "### "):
-			location = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
-		default:
-			if inItalicBlock {
-				if end := strings.Index(trimmed, "*"); end >= 0 {
-					italicBuilder.WriteString("\n")
-					italicBuilder.WriteString(strings.TrimSpace(trimmed[:end]))
-					flushItalicBlock()
-					continue
-				}
-				italicBuilder.WriteString("\n")
-				italicBuilder.WriteString(trimmed)
-				continue
-			}
-			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
-				text := strings.TrimSpace(m[1])
-				if text != "" {
-					contentParts = append(contentParts, text)
-				}
-				continue
-			}
-			if start := strings.Index(trimmed, "*"); start >= 0 {
-				afterStart := trimmed[start+1:]
-				if end := strings.Index(afterStart, "*"); end >= 0 {
-					text := strings.TrimSpace(afterStart[:end])
-					if text != "" {
-						contentParts = append(contentParts, text)
-					}
-					continue
-				}
-				inItalicBlock = true
-				italicBuilder.WriteString(strings.TrimSpace(afterStart))
-				continue
-			}
-			contentParts = append(contentParts, trimmed)
+		text := strings.TrimSpace(m[2])
+		if text == "" {
+			continue
 		}
+		parts = append(parts, notePart{text: text, location: currentLocation})
 	}
-	if inItalicBlock {
-		flushItalicBlock()
+
+	if len(parts) == 0 {
+		return author, location, ""
 	}
-	content = strings.Join(contentParts, "\n")
-	return author, location, content
+	if len(parts) == 1 {
+		return author, parts[0].location, parts[0].text
+	}
+
+	contentParts := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part.location != "" {
+			contentParts = append(contentParts, part.text+"--"+part.location)
+			continue
+		}
+		contentParts = append(contentParts, part.text)
+	}
+	return author, "", strings.Join(contentParts, "\n")
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

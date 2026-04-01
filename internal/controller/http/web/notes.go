@@ -383,11 +383,6 @@ func markdownToHTML(markdown string) template.HTML {
 
 func parseStructuredReadingNote(markdown string) (author, location, content string) {
 	normalized := strings.ReplaceAll(markdown, "\r\n", "\n")
-	if idx := strings.Index(normalized, "\n## "); idx >= 0 {
-		normalized = normalized[:idx]
-	} else if strings.HasPrefix(strings.TrimSpace(normalized), "## ") {
-		normalized = ""
-	}
 
 	if m := markdownAuthorPattern.FindStringSubmatch(normalized); len(m) == 2 {
 		author = strings.TrimSpace(m[1])
@@ -399,6 +394,7 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 	}
 	parts := make([]notePart, 0)
 	currentLocation := ""
+	hasLocatedPart := false
 
 	matches := markdownLocationOrItalicPattern.FindAllStringSubmatch(normalized, -1)
 	for _, m := range matches {
@@ -414,7 +410,22 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 		if text == "" {
 			continue
 		}
-		parts = append(parts, notePart{text: text, location: currentLocation})
+		part := notePart{text: text, location: currentLocation}
+		if part.location != "" {
+			hasLocatedPart = true
+		}
+		parts = append(parts, part)
+	}
+
+	if hasLocatedPart {
+		filtered := make([]notePart, 0, len(parts))
+		for _, part := range parts {
+			if part.location == "" {
+				continue
+			}
+			filtered = append(filtered, part)
+		}
+		parts = filtered
 	}
 
 	if len(parts) == 0 {

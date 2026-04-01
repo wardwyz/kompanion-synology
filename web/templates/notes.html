@@ -2,11 +2,10 @@
 
 {{ define "content" }}
 <h1>阅读笔记</h1>
-<p class="notes-toolbar"><a href="/notes/export.md">导出为 Markdown</a></p>
+<p class="notes-toolbar"><a href="/notes/export.md">导出</a></p>
 
 <form method="get" action="/notes/" class="grid notes-filter-form">
     <div>
-        <label for="book">按书籍筛选</label>
         <select name="book" id="book">
             <option value="all" {{ if or (eq .selectedBook "") (eq .selectedBook "all") }}selected{{ end }}>全部书籍</option>
             {{ range .bookOptions }}
@@ -24,7 +23,6 @@
 <section class="reading-note-book-groups">
     {{ range .groups }}
     <section class="reading-note-book-group">
-        <h2 class="reading-note-book-title"># {{ .Name }}</h2>
         {{ range .Notes }}
         <article class="reading-note">
             <header class="reading-note-header">

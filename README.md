@@ -32,6 +32,9 @@ https://github.com/vanadium23/kompanion
    3. 目录地址：`https://your-kompanion.org/opds/`
    4. 用户名：设备名
    5. 密码：设备密码
+5. joplin配置：
+   1.笔记服务商joplin
+   2.IP+8322+token
 ## ios平台使用Readest类似配置
 ## docker-compose
 XXX 更换成自己的用户名密码
@@ -57,7 +60,7 @@ services:
     container_name: ko-web
     restart: unless-stopped
     ports:
-      - "8322:8080"            # Web / OPDS / 进度同步
+      - "8322:8080"            # Web / OPDS / 进度同步 /joplin
     volumes:
       - ./data:/data           # 持久化数据
     environment:

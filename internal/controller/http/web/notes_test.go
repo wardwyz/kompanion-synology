@@ -52,18 +52,18 @@ func TestGroupNotesByBook_DeduplicateSameBodyAndFixTimezone(t *testing.T) {
 	}
 }
 
-func TestMarkdownToHTML(t *testing.T) {
-	markdown := "## 导论：道路·理论·制度\n\n### Page 75 @ 24 March 2026 12:01:32 PM\n\n*造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。*"
-	html := string(markdownToHTML(markdown))
+func TestParseStructuredReadingNote(t *testing.T) {
+	markdown := "##### 毛泽东\n\n### Page 75 @ 24 March 2026 12:01:32 PM\n\n*造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。*"
+	author, location, content := parseStructuredReadingNote(markdown)
 
-	if !strings.Contains(html, "<h2>导论：道路·理论·制度</h2>") {
-		t.Fatalf("expected h2 heading, got %s", html)
+	if author != "毛泽东" {
+		t.Fatalf("expected author, got %q", author)
 	}
-	if !strings.Contains(html, "<h3>Page 75 @ 24 March 2026 12:01:32 PM</h3>") {
-		t.Fatalf("expected h3 heading, got %s", html)
+	if location != "Page 75 @ 24 March 2026 12:01:32 PM" {
+		t.Fatalf("expected location, got %q", location)
 	}
-	if !strings.Contains(html, "<em>造反派是毛泽东的左手") {
-		t.Fatalf("expected italic sentence, got %s", html)
+	if content != "造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。" {
+		t.Fatalf("expected note content, got %q", content)
 	}
 }
 

@@ -113,6 +113,10 @@
   line-height: 1.7;
 }
 
+.reading-note-location {
+  font-size: 0.85em;
+}
+
 .reading-note-body p,
 .reading-note-body ul,
 .reading-note-body ol,

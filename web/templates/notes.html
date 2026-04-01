@@ -31,14 +31,16 @@
                         {{ .DisplayCreatedAt }}
                         {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
                     </small>
-                    <h3>{{ .Title }}</h3>
+                    <h3>{{ .BookName }}{{ if .Author }}--{{ .Author }}{{ end }}</h3>
                 </div>
                 <form method="post" action="/notes/{{ .ID }}/delete" onsubmit="return confirm('确认删除这条笔记吗？');">
                     <button type="submit">删除</button>
                 </form>
             </header>
 
-            <div class="reading-note-body">{{ .BodyMarkdown }}</div>
+            <div class="reading-note-body">
+                {{ .Content }}{{ if .Location }}<small class="reading-note-location">--{{ .Location }}</small>{{ end }}
+            </div>
         </article>
         {{ end }}
     </section>

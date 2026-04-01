@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/vanadium23/kompanion/internal/stats"
 	syncpkg "github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
+	"golang.org/x/sync/errgroup"
 )
 
 type booksRoutes struct {
@@ -22,6 +24,13 @@ type booksRoutes struct {
 	notes    notes.Service
 	logger   logger.Interface
 }
+
+type BookWithProgress struct {
+	entity.Book
+	Progress int
+}
+
+const bookProgressFetchConcurrency = 6
 
 func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, notesSvc notes.Service, l logger.Interface) {
 	r := &booksRoutes{
@@ -73,23 +82,7 @@ func renderBooksPage(
 		return
 	}
 
-	// Fetch progress for each book
-	type BookWithProgress struct {
-		entity.Book
-		Progress int
-	}
-	booksWithProgress := make([]BookWithProgress, len(books.Books))
-	for i, book := range books.Books {
-		progress, err := progressSync.Fetch(c.Request.Context(), book.DocumentID)
-		if err != nil {
-			log.Error(err, "failed to fetch progress for book %s", book.ID)
-			progress = entity.Progress{}
-		}
-		booksWithProgress[i] = BookWithProgress{
-			Book:     book,
-			Progress: int(progress.Percentage * 100),
-		}
-	}
+	booksWithProgress := fetchBooksWithProgress(c.Request.Context(), books.Books, progressSync, log)
 
 	pageData := gin.H{
 		"books": booksWithProgress,
@@ -111,6 +104,39 @@ func renderBooksPage(
 	}
 
 	c.HTML(status, "books", passStandartContext(c, pageData))
+}
+
+func fetchBooksWithProgress(
+	ctx context.Context,
+	books []entity.Book,
+	progressSync syncpkg.Progress,
+	log logger.Interface,
+) []BookWithProgress {
+	booksWithProgress := make([]BookWithProgress, len(books))
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(bookProgressFetchConcurrency)
+
+	for i, book := range books {
+		i := i
+		book := book
+		g.Go(func() error {
+			progress, err := progressSync.Fetch(gctx, book.DocumentID)
+			if err != nil {
+				log.Error(err, "failed to fetch progress for book %s", book.ID)
+				progress = entity.Progress{}
+			}
+
+			booksWithProgress[i] = BookWithProgress{
+				Book:     book,
+				Progress: int(progress.Percentage * 100),
+			}
+
+			return nil
+		})
+	}
+
+	_ = g.Wait()
+	return booksWithProgress
 }
 
 func (r *booksRoutes) uploadBook(c *gin.Context) {

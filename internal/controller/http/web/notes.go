@@ -19,8 +19,6 @@ import (
 var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
-var markdownPageLocationPattern = regexp.MustCompile(`(?i)^Page\s+(\d+)\s+@\s+(.+)$`)
-var markdownPageOnlyPattern = regexp.MustCompile(`(?i)^Page\s+(\d+)$`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -189,7 +187,7 @@ func notesToMarkdown(groups []notesBookGroup) string {
 				if note.Content != "" {
 					b.WriteString("--")
 				}
-				b.WriteString(localizeReadingLocation(note.Location))
+				b.WriteString(note.Location)
 			}
 			b.WriteString("\n")
 
@@ -393,7 +391,7 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 		case strings.HasPrefix(trimmed, "##### "):
 			author = strings.TrimSpace(strings.TrimPrefix(trimmed, "##### "))
 		case strings.HasPrefix(trimmed, "### "):
-			location = localizeReadingLocation(strings.TrimSpace(strings.TrimPrefix(trimmed, "### ")))
+			location = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
 		default:
 			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
 				text := strings.TrimSpace(m[1])
@@ -407,82 +405,6 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 	}
 	content = strings.Join(contentParts, " ")
 	return author, location, content
-}
-
-func localizeReadingLocation(location string) string {
-	location = strings.TrimSpace(location)
-	m := markdownPageLocationPattern.FindStringSubmatch(location)
-	if len(m) != 3 {
-		onlyPageMatch := markdownPageOnlyPattern.FindStringSubmatch(location)
-		if len(onlyPageMatch) == 2 {
-			pageNumber, err := strconv.Atoi(onlyPageMatch[1])
-			if err != nil {
-				return location
-			}
-			return "第" + intToChineseNumber(pageNumber) + "页"
-		}
-		return location
-	}
-
-	pageNumber, err := strconv.Atoi(m[1])
-	if err != nil {
-		return location
-	}
-	pageText := "第" + intToChineseNumber(pageNumber) + "页"
-
-	parsed, err := time.Parse("2 January 2006 3:04:05 PM", strings.TrimSpace(m[2]))
-	if err != nil {
-		return pageText + " - " + strings.TrimSpace(m[2])
-	}
-
-	return fmt.Sprintf("%s - %d年%d月%d日 %02d:%02d:%02d", pageText, parsed.Year(), parsed.Month(), parsed.Day(), parsed.Hour(), parsed.Minute(), parsed.Second())
-}
-
-func intToChineseNumber(n int) string {
-	if n <= 0 {
-		return strconv.Itoa(n)
-	}
-	digits := []string{"零", "一", "二", "三", "四", "五", "六", "七", "八", "九"}
-	units := []string{"", "十", "百", "千"}
-
-	if n < 10 {
-		return digits[n]
-	}
-	if n < 10000 {
-		parts := make([]string, 0)
-		num := n
-		zeroPending := false
-		for unit := 3; unit >= 0; unit-- {
-			base := intPow10(unit)
-			digit := num / base
-			num %= base
-			if digit == 0 {
-				if len(parts) > 0 {
-					zeroPending = true
-				}
-				continue
-			}
-			if zeroPending {
-				parts = append(parts, digits[0])
-				zeroPending = false
-			}
-			if !(digit == 1 && unit == 1 && len(parts) == 0) {
-				parts = append(parts, digits[digit])
-			}
-			parts = append(parts, units[unit])
-		}
-		return strings.Join(parts, "")
-	}
-
-	return strconv.Itoa(n)
-}
-
-func intPow10(exp int) int {
-	out := 1
-	for i := 0; i < exp; i++ {
-		out *= 10
-	}
-	return out
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

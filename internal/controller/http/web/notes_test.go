@@ -59,27 +59,11 @@ func TestParseStructuredReadingNote(t *testing.T) {
 	if author != "毛泽东" {
 		t.Fatalf("expected author, got %q", author)
 	}
-	if location != "第七十五页 - 2026年3月24日 12:01:32" {
+	if location != "Page 75 @ 24 March 2026 12:01:32 PM" {
 		t.Fatalf("expected location, got %q", location)
 	}
 	if content != "造反派是毛泽东的左手，冲击官僚体制需要他们；官僚集团是毛泽东的右手，恢复秩序需要他们。" {
 		t.Fatalf("expected note content, got %q", content)
-	}
-}
-
-func TestLocalizeReadingLocation(t *testing.T) {
-	got := localizeReadingLocation("Page 4 @ 30 March 2026 11:05:50 AM")
-	want := "第四页 - 2026年3月30日 11:05:50"
-	if got != want {
-		t.Fatalf("expected %q, got %q", want, got)
-	}
-}
-
-func TestLocalizeReadingLocation_PageOnly(t *testing.T) {
-	got := localizeReadingLocation("Page 4")
-	want := "第四页"
-	if got != want {
-		t.Fatalf("expected %q, got %q", want, got)
 	}
 }
 
@@ -103,7 +87,7 @@ func TestNotesToMarkdown(t *testing.T) {
 	if !strings.Contains(out, "## 三国演义--罗贯中") {
 		t.Fatalf("expected book and author heading, got %s", out)
 	}
-	if !strings.Contains(out, "桃园结义--第一页") {
+	if !strings.Contains(out, "桃园结义--Page 1") {
 		t.Fatalf("expected body and location format, got %s", out)
 	}
 }

@@ -76,14 +76,13 @@ func (r *notesRoutes) list(c *gin.Context) {
 		}
 	}
 
-	visibleNotes := flattenNotes(groups)
-	if selectedBook != "" && selectedBook != "all" {
-		visibleNotes = filterNotesByBook(visibleNotes, selectedBook)
-	}
+	visibleGroups := filterGroupsByBook(groups, selectedBook)
+	visibleNotes := flattenNotes(visibleGroups)
 	pagedNotes, pagination := paginateReadingNotes(visibleNotes, page, perPage)
+	visibleGroups = regroupByBook(pagedNotes)
 
 	c.HTML(http.StatusOK, "notes", passStandartContext(c, gin.H{
-		"groups":       groups,
+		"groups":       visibleGroups,
 		"notes":        pagedNotes,
 		"bookOptions":  bookOptions,
 		"selectedBook": selectedBook,
@@ -228,6 +227,41 @@ func filterNotesByBook(notes []readingNoteView, bookName string) []readingNoteVi
 		}
 	}
 	return filtered
+}
+
+func filterGroupsByBook(groups []notesBookGroup, bookName string) []notesBookGroup {
+	if bookName == "" || bookName == "all" {
+		return groups
+	}
+	filtered := make([]notesBookGroup, 0, 1)
+	for _, group := range groups {
+		if group.Name == bookName {
+			filtered = append(filtered, group)
+			break
+		}
+	}
+	return filtered
+}
+
+func regroupByBook(notes []readingNoteView) []notesBookGroup {
+	if len(notes) == 0 {
+		return nil
+	}
+	groupMap := make(map[string][]readingNoteView)
+	for _, note := range notes {
+		groupMap[note.BookName] = append(groupMap[note.BookName], note)
+	}
+	groupNames := make([]string, 0, len(groupMap))
+	for name := range groupMap {
+		groupNames = append(groupNames, name)
+	}
+	sort.Strings(groupNames)
+
+	out := make([]notesBookGroup, 0, len(groupNames))
+	for _, name := range groupNames {
+		out = append(out, notesBookGroup{Name: name, Notes: groupMap[name]})
+	}
+	return out
 }
 
 func paginateReadingNotes(notes []readingNoteView, page, perPage int) ([]readingNoteView, gin.H) {

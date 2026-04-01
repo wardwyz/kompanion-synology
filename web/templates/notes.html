@@ -2,9 +2,9 @@
 
 {{ define "content" }}
 <h1>阅读笔记</h1>
-<p><a href="/notes/export.md">导出为 Markdown</a></p>
+<p class="notes-toolbar"><a href="/notes/export.md">导出为 Markdown</a></p>
 
-<form method="get" action="/notes/" class="grid">
+<form method="get" action="/notes/" class="grid notes-filter-form">
     <div>
         <label for="book">按书籍筛选</label>
         <select name="book" id="book">
@@ -21,25 +21,29 @@
 <p>暂无笔记。</p>
 {{ end }}
 
-<section class="reading-note-book-group">
-    {{ range .notes }}
-    <article class="reading-note">
-        <header class="reading-note-header">
-            <div>
-                <small>
-                    {{ .BookName }} ·
-                    {{ .DisplayCreatedAt }} 
-                    {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
-                </small>
-                <h1>{{ .Title }}</h1>
-            </div>
-            <form method="post" action="/notes/{{ .ID }}/delete" onsubmit="return confirm('确认删除这条笔记吗？');">
-                <button type="submit">删除</button>
-            </form>
-        </header>
+<section class="reading-note-book-groups">
+    {{ range .groups }}
+    <section class="reading-note-book-group">
+        <h2 class="reading-note-book-title"># {{ .Name }}</h2>
+        {{ range .Notes }}
+        <article class="reading-note">
+            <header class="reading-note-header">
+                <div>
+                    <small class="reading-note-meta">
+                        {{ .DisplayCreatedAt }}
+                        {{ if .DocumentID }} · 文档标识: <code>{{ .DocumentID }}</code>{{ end }}
+                    </small>
+                    <h3>{{ .Title }}</h3>
+                </div>
+                <form method="post" action="/notes/{{ .ID }}/delete" onsubmit="return confirm('确认删除这条笔记吗？');">
+                    <button type="submit">删除</button>
+                </form>
+            </header>
 
-        <div class="reading-note-body">{{ .BodyMarkdown }}</div>
-    </article>
+            <div class="reading-note-body">{{ .BodyMarkdown }}</div>
+        </article>
+        {{ end }}
+    </section>
     {{ end }}
 </section>
 

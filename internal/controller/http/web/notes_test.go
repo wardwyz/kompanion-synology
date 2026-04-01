@@ -91,6 +91,18 @@ func TestParseStructuredReadingNote_MultipleLocationsInTemplate(t *testing.T) {
 	}
 }
 
+func TestParseStructuredReadingNote_KeepHighlightsAcrossSecondLevelHeadings(t *testing.T) {
+	markdown := "## 导论\n### Page 75 @ 24 March 2026 12:01:32 PM\n*第一条*\n## 第一章\n### Page 86 @ 24 March 2026 12:25:05 PM\n*第二条*"
+	_, location, content := parseStructuredReadingNote(markdown)
+
+	if location != "" {
+		t.Fatalf("expected empty location when multiple highlights are present, got %q", location)
+	}
+	if content != "第一条--Page 75 @ 24 March 2026 12:01:32 PM\n第二条--Page 86 @ 24 March 2026 12:25:05 PM" {
+		t.Fatalf("expected highlights under different second-level headings to be kept, got %q", content)
+	}
+}
+
 func TestNotesToMarkdown(t *testing.T) {
 	out := notesToMarkdown([]notesBookGroup{
 		{

@@ -20,7 +20,6 @@ var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
 var markdownAuthorPattern = regexp.MustCompile(`(?m)^#####\s+(.+?)\s*$`)
-var markdownLocationOrItalicPattern = regexp.MustCompile(`(?s)###\s+([^\n]+)|\*([^*]+)\*`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -383,11 +382,6 @@ func markdownToHTML(markdown string) template.HTML {
 
 func parseStructuredReadingNote(markdown string) (author, location, content string) {
 	normalized := strings.ReplaceAll(markdown, "\r\n", "\n")
-	if idx := strings.Index(normalized, "\n## "); idx >= 0 {
-		normalized = normalized[:idx]
-	} else if strings.HasPrefix(strings.TrimSpace(normalized), "## ") {
-		normalized = ""
-	}
 
 	if m := markdownAuthorPattern.FindStringSubmatch(normalized); len(m) == 2 {
 		author = strings.TrimSpace(m[1])
@@ -399,22 +393,45 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 	}
 	parts := make([]notePart, 0)
 	currentLocation := ""
+	hasLocatedPart := false
 
-	matches := markdownLocationOrItalicPattern.FindAllStringSubmatch(normalized, -1)
-	for _, m := range matches {
-		if len(m) < 3 {
+	for _, line := range strings.Split(normalized, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
 			continue
 		}
-		if strings.TrimSpace(m[1]) != "" {
-			currentLocation = strings.TrimSpace(m[1])
+
+		if strings.HasPrefix(trimmed, "## ") {
+			currentLocation = ""
+			continue
+		}
+		if strings.HasPrefix(trimmed, "### ") {
+			currentLocation = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
 			location = currentLocation
 			continue
 		}
-		text := strings.TrimSpace(m[2])
-		if text == "" {
+
+		m := markdownItalicLinePattern.FindStringSubmatch(trimmed)
+		if len(m) != 2 {
 			continue
 		}
-		parts = append(parts, notePart{text: text, location: currentLocation})
+		text := strings.TrimSpace(m[1])
+		part := notePart{text: text, location: currentLocation}
+		if part.location != "" {
+			hasLocatedPart = true
+		}
+		parts = append(parts, part)
+	}
+
+	if hasLocatedPart {
+		filtered := make([]notePart, 0, len(parts))
+		for _, part := range parts {
+			if part.location == "" {
+				continue
+			}
+			filtered = append(filtered, part)
+		}
+		parts = filtered
 	}
 
 	if len(parts) == 0 {

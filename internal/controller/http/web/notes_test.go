@@ -67,6 +67,15 @@ func TestParseStructuredReadingNote(t *testing.T) {
 	}
 }
 
+func TestParseStructuredReadingNote_MultiParagraphAndIgnoreSecondLevelHeading(t *testing.T) {
+	markdown := "##### 作者A\n\n### Page 12\n\n*第一段内容*\n\n*第二段内容*\n\n## 不需要的部分\n*第三段不应该出现*"
+	_, _, content := parseStructuredReadingNote(markdown)
+
+	if content != "第一段内容\n第二段内容" {
+		t.Fatalf("expected multiline italic content before second-level heading, got %q", content)
+	}
+}
+
 func TestNotesToMarkdown(t *testing.T) {
 	out := notesToMarkdown([]notesBookGroup{
 		{

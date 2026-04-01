@@ -382,10 +382,25 @@ func markdownToHTML(markdown string) template.HTML {
 func parseStructuredReadingNote(markdown string) (author, location, content string) {
 	lines := strings.Split(markdown, "\n")
 	contentParts := make([]string, 0)
+	inItalicBlock := false
+	var italicBuilder strings.Builder
+
+	flushItalicBlock := func() {
+		text := strings.TrimSpace(italicBuilder.String())
+		if text != "" {
+			contentParts = append(contentParts, text)
+		}
+		italicBuilder.Reset()
+		inItalicBlock = false
+	}
+
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			break
 		}
 		switch {
 		case strings.HasPrefix(trimmed, "##### "):
@@ -393,6 +408,17 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 		case strings.HasPrefix(trimmed, "### "):
 			location = strings.TrimSpace(strings.TrimPrefix(trimmed, "### "))
 		default:
+			if inItalicBlock {
+				if end := strings.Index(trimmed, "*"); end >= 0 {
+					italicBuilder.WriteString("\n")
+					italicBuilder.WriteString(strings.TrimSpace(trimmed[:end]))
+					flushItalicBlock()
+					continue
+				}
+				italicBuilder.WriteString("\n")
+				italicBuilder.WriteString(trimmed)
+				continue
+			}
 			if m := markdownItalicLinePattern.FindStringSubmatch(trimmed); len(m) == 2 {
 				text := strings.TrimSpace(m[1])
 				if text != "" {
@@ -400,10 +426,26 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 				}
 				continue
 			}
+			if start := strings.Index(trimmed, "*"); start >= 0 {
+				afterStart := trimmed[start+1:]
+				if end := strings.Index(afterStart, "*"); end >= 0 {
+					text := strings.TrimSpace(afterStart[:end])
+					if text != "" {
+						contentParts = append(contentParts, text)
+					}
+					continue
+				}
+				inItalicBlock = true
+				italicBuilder.WriteString(strings.TrimSpace(afterStart))
+				continue
+			}
 			contentParts = append(contentParts, trimmed)
 		}
 	}
-	content = strings.Join(contentParts, " ")
+	if inItalicBlock {
+		flushItalicBlock()
+	}
+	content = strings.Join(contentParts, "\n")
 	return author, location, content
 }
 

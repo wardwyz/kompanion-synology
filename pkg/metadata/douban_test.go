@@ -45,3 +45,43 @@ func TestMergeMetadataOverride(t *testing.T) {
 		t.Fatalf("publisher should keep base value when override empty: %q", got.Publisher)
 	}
 }
+
+func TestParseDoubanBookPageExtractsAuthorAndSeries(t *testing.T) {
+	body := `
+<html>
+  <head>
+    <meta property="og:title" content="三体"/>
+    <meta property="og:description" content="科幻小说"/>
+  </head>
+  <body>
+    <div id="info">
+      <span class="pl">作者:</span> <a href="/author/1">刘慈欣</a><br/>
+      <span class="pl">丛书:</span> <a href="/series/1">地球往事三部曲</a><br/>
+    </div>
+  </body>
+</html>`
+
+	got := parseDoubanBookPage(body)
+	if got.Author != "刘慈欣" {
+		t.Fatalf("expected author 刘慈欣, got %q", got.Author)
+	}
+	if got.Series != "地球往事三部曲" {
+		t.Fatalf("expected series 地球往事三部曲, got %q", got.Series)
+	}
+}
+
+func TestParseDoubanBookPageExtractsPlainTextAuthor(t *testing.T) {
+	body := `
+<html>
+  <body>
+    <div id="info">
+      <span class="pl">作者</span>: [日] 东野圭吾<br/>
+    </div>
+  </body>
+</html>`
+
+	got := parseDoubanBookPage(body)
+	if got.Author != "[日] 东野圭吾" {
+		t.Fatalf("expected plain text author, got %q", got.Author)
+	}
+}

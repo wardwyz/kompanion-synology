@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,16 +31,22 @@ type Book struct {
 }
 
 func (b Book) extension() string {
-	tmp := strings.Split(b.FilePath, ".")
-	return tmp[len(tmp)-1]
+	ext := strings.TrimPrefix(filepath.Ext(strings.TrimSpace(b.FilePath)), ".")
+	if ext == "" {
+		return "epub"
+	}
+	return ext
 }
 
 func (b Book) Filename() string {
-	basename := b.ID + "." + b.extension()
-	if len(b.Author) == 0 {
-		return b.Title + " -- " + basename
+	title := strings.TrimSpace(b.Title)
+	if title == "" {
+		title = strings.TrimSpace(b.ID)
 	}
-	return b.Title + " - " + b.Author + " -- " + basename
+	if title == "" {
+		title = "book"
+	}
+	return title + "." + b.extension()
 }
 
 func (b Book) MimeType() string {

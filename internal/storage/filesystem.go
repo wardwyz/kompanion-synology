@@ -3,9 +3,9 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
@@ -36,15 +36,19 @@ func NewFilesystemStorage(root string) (*FilesystemStorage, error) {
 }
 
 func (s *FilesystemStorage) Read(ctx context.Context, p string) (*os.File, error) {
-	filepath := path.Join(s.root, p)
-	_, err := os.Stat(filepath)
+	resolvedPath, err := resolveStoragePath(s.root, p)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = os.Stat(resolvedPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	return os.Open(filepath)
+	return os.Open(resolvedPath)
 }
 
 func (s *FilesystemStorage) Write(ctx context.Context, src, dest string) error {
@@ -54,7 +58,11 @@ func (s *FilesystemStorage) Write(ctx context.Context, src, dest string) error {
 	}
 	defer srcFile.Close()
 
-	dst := path.Join(s.root, dest)
+	dst, err := resolveStoragePath(s.root, dest)
+	if err != nil {
+		return err
+	}
+
 	dirPath := filepath.Dir(dst)
 	err = os.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {
@@ -76,14 +84,45 @@ func (s *FilesystemStorage) Write(ctx context.Context, src, dest string) error {
 }
 
 func (s *FilesystemStorage) Delete(ctx context.Context, p string) error {
-	filepath := path.Join(s.root, p)
+	resolvedPath, err := resolveStoragePath(s.root, p)
+	if err != nil {
+		return err
+	}
 
-	err := os.Remove(filepath)
+	err = os.Remove(resolvedPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return ErrNotFound
 	}
 
 	return err
+}
+
+func resolveStoragePath(root, relativePath string) (string, error) {
+	if strings.TrimSpace(relativePath) == "" {
+		return "", fmt.Errorf("invalid path: empty paths are not allowed")
+	}
+
+	if filepath.IsAbs(relativePath) {
+		return "", fmt.Errorf("invalid path: absolute paths are not allowed")
+	}
+
+	cleanRoot := filepath.Clean(root)
+	cleanPath := filepath.Clean(relativePath)
+	if cleanPath == "." {
+		return "", fmt.Errorf("invalid path: root path is not allowed")
+	}
+
+	fullPath := filepath.Join(cleanRoot, cleanPath)
+	rel, err := filepath.Rel(cleanRoot, fullPath)
+	if err != nil {
+		return "", err
+	}
+
+	if rel == ".." || strings.HasPrefix(rel, fmt.Sprintf("..%c", filepath.Separator)) {
+		return "", fmt.Errorf("invalid path: path traversal is not allowed")
+	}
+
+	return fullPath, nil
 }
 
 func checkSystemWrites(root string) error {

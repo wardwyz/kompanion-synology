@@ -32,15 +32,25 @@ func AutoScrapeDouban(original Metadata) Metadata {
 }
 
 func scrapeDouban(original Metadata) (Metadata, error) {
-	if strings.TrimSpace(original.ISBN) != "" {
-		return scrapeDoubanByISBN(original.ISBN)
+	title := strings.TrimSpace(original.Title)
+	isbn := strings.TrimSpace(original.ISBN)
+
+	if title != "" {
+		scraped, err := scrapeDoubanByKeyword(strings.TrimSpace(title + " " + original.Author))
+		if err == nil {
+			return scraped, nil
+		}
+		if isbn != "" {
+			return scrapeDoubanByISBN(isbn)
+		}
+		return Metadata{}, err
 	}
 
-	if strings.TrimSpace(original.Title) == "" {
-		return Metadata{}, fmt.Errorf("insufficient input for douban scraping")
+	if isbn != "" {
+		return scrapeDoubanByISBN(isbn)
 	}
 
-	return scrapeDoubanByKeyword(strings.TrimSpace(original.Title + " " + original.Author))
+	return Metadata{}, fmt.Errorf("insufficient input for douban scraping")
 }
 
 func scrapeDoubanByISBN(isbn string) (Metadata, error) {

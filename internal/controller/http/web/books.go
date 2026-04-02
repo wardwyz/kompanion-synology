@@ -14,6 +14,7 @@ import (
 	"github.com/vanadium23/kompanion/internal/stats"
 	syncpkg "github.com/vanadium23/kompanion/internal/sync"
 	"github.com/vanadium23/kompanion/pkg/logger"
+	"github.com/vanadium23/kompanion/pkg/metadata"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -47,6 +48,7 @@ func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.R
 	handler.POST("/:bookID", r.updateBookMetadata)
 	handler.POST("/:bookID/delete", r.deleteBook)
 	handler.GET("/:bookID/download", r.downloadBook)
+	handler.POST("/:bookID/scrape", r.scrapeBookMetadata)
 	handler.GET("/:bookID/cover", r.viewBookCover)
 }
 
@@ -194,6 +196,39 @@ func (r *booksRoutes) downloadBook(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename="+book.Filename())
 	c.Header("Content-Type", "application/octet-stream")
 	c.File(file.Name())
+}
+
+func (r *booksRoutes) scrapeBookMetadata(c *gin.Context) {
+	bookID := c.Param("bookID")
+
+	book, err := r.shelf.ViewBook(c.Request.Context(), bookID)
+	if err != nil {
+		c.HTML(500, "error", passStandartContext(c, gin.H{"error": err.Error()}))
+		return
+	}
+
+	enriched := metadata.AutoScrapeDouban(metadata.Metadata{
+		Title:       book.Title,
+		Author:      book.Author,
+		Description: book.Description,
+		Publisher:   book.Publisher,
+		ISBN:        book.ISBN,
+		Series:      book.Series,
+	})
+
+	_, err = r.shelf.UpdateBookMetadata(c.Request.Context(), bookID, entity.Book{
+		Title:       enriched.Title,
+		Author:      enriched.Author,
+		Description: enriched.Description,
+		Publisher:   enriched.Publisher,
+		ISBN:        enriched.ISBN,
+		Series:      enriched.Series,
+	})
+	if err != nil {
+		r.logger.Error(err, "http - web - shelf - scrapeBookMetadata")
+	}
+
+	c.Redirect(http.StatusFound, "/books/"+bookID)
 }
 
 func (r *booksRoutes) viewBook(c *gin.Context) {

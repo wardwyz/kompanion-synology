@@ -311,7 +311,7 @@ func TestHTTPKompanionShelf(t *testing.T) {
 	)
 
 	// update metadata
-	updatedTitle := "The Egg"
+	updatedTitle := "The Egg Updated"
 	updatedAuthor := "Andy Weier"
 	Test(t,
 		HTTPClient(client),

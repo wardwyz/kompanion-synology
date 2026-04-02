@@ -18,6 +18,7 @@ var (
 	opfDescriptionPattern = regexp.MustCompile(`(?is)<dc:description[^>]*>.*?</dc:description>`)
 	opfPublisherPattern   = regexp.MustCompile(`(?is)<dc:publisher[^>]*>.*?</dc:publisher>`)
 	opfIdentifierPattern  = regexp.MustCompile(`(?is)<dc:identifier[^>]*>.*?</dc:identifier>`)
+	opfMetadataPattern    = regexp.MustCompile(`(?is)<metadata[^>]*>.*?</metadata>`)
 	fb2TitlePattern       = regexp.MustCompile(`(?is)<book-title>.*?</book-title>`)
 )
 
@@ -199,25 +200,39 @@ func replaceOPFMetadata(content []byte, m Metadata) []byte {
 	updated := string(content)
 	if title := strings.TrimSpace(m.Title); title != "" {
 		replacement := "<dc:title>" + xmlEscape(title) + "</dc:title>"
-		updated = opfTitlePattern.ReplaceAllString(updated, replacement)
+		updated = replaceOrInsertOPFTag(updated, opfTitlePattern, replacement)
 	}
 	if author := strings.TrimSpace(m.Author); author != "" {
 		replacement := "<dc:creator>" + xmlEscape(author) + "</dc:creator>"
-		updated = opfCreatorPattern.ReplaceAllString(updated, replacement)
+		updated = replaceOrInsertOPFTag(updated, opfCreatorPattern, replacement)
 	}
 	if desc := strings.TrimSpace(m.Description); desc != "" {
 		replacement := "<dc:description>" + xmlEscape(desc) + "</dc:description>"
-		updated = opfDescriptionPattern.ReplaceAllString(updated, replacement)
+		updated = replaceOrInsertOPFTag(updated, opfDescriptionPattern, replacement)
 	}
 	if publisher := strings.TrimSpace(m.Publisher); publisher != "" {
 		replacement := "<dc:publisher>" + xmlEscape(publisher) + "</dc:publisher>"
-		updated = opfPublisherPattern.ReplaceAllString(updated, replacement)
+		updated = replaceOrInsertOPFTag(updated, opfPublisherPattern, replacement)
 	}
 	if isbn := strings.TrimSpace(m.ISBN); isbn != "" {
 		replacement := "<dc:identifier>" + xmlEscape(isbn) + "</dc:identifier>"
-		updated = opfIdentifierPattern.ReplaceAllString(updated, replacement)
+		updated = replaceOrInsertOPFTag(updated, opfIdentifierPattern, replacement)
 	}
 	return []byte(updated)
+}
+
+func replaceOrInsertOPFTag(content string, pattern *regexp.Regexp, replacement string) string {
+	if pattern.MatchString(content) {
+		return pattern.ReplaceAllString(content, replacement)
+	}
+
+	if !opfMetadataPattern.MatchString(content) {
+		return content
+	}
+
+	return opfMetadataPattern.ReplaceAllStringFunc(content, func(metaBlock string) string {
+		return strings.Replace(metaBlock, "</metadata>", replacement+"</metadata>", 1)
+	})
 }
 
 func replaceFB2Metadata(content []byte, m Metadata) []byte {

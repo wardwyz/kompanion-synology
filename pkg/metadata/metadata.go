@@ -27,7 +27,20 @@ type Metadata struct {
 // If scraping fails, defaults remain unchanged.
 func ApplyDefaultsAndAutoScrape(m Metadata, uploadedFilename string) Metadata {
 	defaults := applyDefaults(m, uploadedFilename)
+	if !doubanAutoScrapeEnabled() {
+		return defaults
+	}
 	return AutoScrapeDouban(defaults)
+}
+
+func doubanAutoScrapeEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv("KOMPANION_DOUBAN_AUTO_SCRAPE")))
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
 }
 
 // ExtractBookMetadata extracts metadata from a book file

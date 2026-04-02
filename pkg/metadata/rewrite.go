@@ -27,7 +27,11 @@ func RewriteDownloadedMetadata(src *os.File, format string, m Metadata) (*os.Fil
 	if src == nil {
 		return nil, fmt.Errorf("source file is nil")
 	}
-	if strings.TrimSpace(m.Title) == "" && strings.TrimSpace(m.Author) == "" && strings.TrimSpace(m.Description) == "" {
+	if strings.TrimSpace(m.Title) == "" &&
+		strings.TrimSpace(m.Author) == "" &&
+		strings.TrimSpace(m.Description) == "" &&
+		strings.TrimSpace(m.Publisher) == "" &&
+		strings.TrimSpace(m.ISBN) == "" {
 		return src, nil
 	}
 

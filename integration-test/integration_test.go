@@ -16,6 +16,8 @@ import (
 	"github.com/Eun/go-hit"
 	. "github.com/Eun/go-hit"
 	petname "github.com/dustinkirkland/golang-petname"
+
+	"github.com/vanadium23/kompanion/pkg/metadata"
 )
 
 const (
@@ -333,14 +335,45 @@ func TestHTTPKompanionShelf(t *testing.T) {
 	// download book
 	// "attachment; filename=The Egg.epub"
 	filename := fmt.Sprintf("%s.epub", updatedTitle)
+	var downloadedBookContent []byte
 	Test(t,
 		HTTPClient(client),
 		Description("Kompanion Download Book"),
 		Get(fmt.Sprintf("%s/books/%s/download", basePath, bookID)),
 		Expect().Status().Equal(http.StatusOK),
-		Expect().Body().Bytes().Equal(bookContent),
+		Store().Response().Body().Bytes().In(&downloadedBookContent),
 		Expect().Headers("Content-Disposition").Equal("attachment; filename="+filename),
 	)
+
+	tempDownloadedBook, err := os.CreateTemp("", "downloaded-*.epub")
+	if err != nil {
+		t.Fatalf("Failed to create temp downloaded file: %s", err)
+	}
+	defer os.Remove(tempDownloadedBook.Name())
+	if _, err = tempDownloadedBook.Write(downloadedBookContent); err != nil {
+		t.Fatalf("Failed to write downloaded content to temp file: %s", err)
+	}
+	if err = tempDownloadedBook.Close(); err != nil {
+		t.Fatalf("Failed to close temp downloaded file: %s", err)
+	}
+
+	parsedDownloadedBook, err := os.Open(tempDownloadedBook.Name())
+	if err != nil {
+		t.Fatalf("Failed to open temp downloaded file: %s", err)
+	}
+	defer func() { _ = parsedDownloadedBook.Close() }()
+
+	downloadedMetadata, err := metadata.ExtractBookMetadata(parsedDownloadedBook)
+	if err != nil {
+		t.Fatalf("Failed to extract metadata from downloaded file: %s", err)
+	}
+
+	if downloadedMetadata.Title != updatedTitle {
+		t.Fatalf("Expected downloaded title %q, got %q", updatedTitle, downloadedMetadata.Title)
+	}
+	if downloadedMetadata.Author != updatedAuthor {
+		t.Fatalf("Expected downloaded author %q, got %q", updatedAuthor, downloadedMetadata.Author)
+	}
 }
 
 // stats

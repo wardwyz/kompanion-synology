@@ -179,7 +179,7 @@ func (uc *BookShelf) syncStoredFileMetadata(ctx context.Context, originalBook, u
 	if err != nil {
 		return err
 	}
-	defer sourceFile.Close()
+	defer func() { _ = sourceFile.Close() }()
 
 	rewritten, err := metadata.RewriteEPUBMetadata(sourceFile.Name(), metadata.Metadata{
 		Title:       updatedBook.Title,
@@ -199,7 +199,7 @@ func (uc *BookShelf) syncStoredFileMetadata(ctx context.Context, originalBook, u
 		return err
 	}
 	defer func() {
-		rewritten.Close()
+		_ = rewritten.Close()
 		_ = os.Remove(rewritten.Name())
 	}()
 

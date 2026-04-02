@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -178,59 +177,8 @@ func (uc *BookShelf) UpdateBookMetadata(ctx context.Context, bookID string, meta
 	if err != nil {
 		return entity.Book{}, fmt.Errorf("BookShelf - UpdateBookMetadata - s.repo.Update: %w", err)
 	}
-	if err := uc.persistMetadataToSourceFile(ctx, book, updatedBook); err != nil {
-		uc.logger.Error("BookShelf - UpdateBookMetadata - persistMetadataToSourceFile: %s", err)
-	}
 
 	return updatedBook, nil
-}
-
-func (uc *BookShelf) persistMetadataToSourceFile(ctx context.Context, currentBook, updatedBook entity.Book) error {
-	if strings.TrimSpace(currentBook.FilePath) == "" {
-		return nil
-	}
-
-	source, err := uc.storage.Read(ctx, currentBook.FilePath)
-	if err != nil {
-		return fmt.Errorf("read source: %w", err)
-	}
-	defer source.Close()
-
-	rewritten, err := metadata.RewriteDownloadedMetadata(source, currentBook.Format, metadata.Metadata{
-		Title:       updatedBook.Title,
-		Author:      updatedBook.Author,
-		Description: updatedBook.Description,
-		Publisher:   updatedBook.Publisher,
-		ISBN:        updatedBook.ISBN,
-	})
-	if err != nil {
-		return fmt.Errorf("rewrite metadata: %w", err)
-	}
-	if rewritten != source {
-		defer rewritten.Close()
-	}
-
-	tempOut, err := os.CreateTemp("", "kompanion-rewrite-source-*")
-	if err != nil {
-		return fmt.Errorf("create temp output: %w", err)
-	}
-	defer os.Remove(tempOut.Name())
-	defer tempOut.Close()
-
-	if _, err := rewritten.Seek(0, io.SeekStart); err != nil {
-		return fmt.Errorf("seek rewritten file: %w", err)
-	}
-	if _, err := io.Copy(tempOut, rewritten); err != nil {
-		return fmt.Errorf("copy rewritten file: %w", err)
-	}
-	if err := tempOut.Sync(); err != nil {
-		return fmt.Errorf("sync rewritten temp file: %w", err)
-	}
-
-	if err := uc.storage.Write(ctx, tempOut.Name(), currentBook.FilePath); err != nil {
-		return fmt.Errorf("write rewritten metadata to storage: %w", err)
-	}
-	return nil
 }
 
 func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Book, *os.File, error) {
@@ -241,22 +189,6 @@ func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Bo
 	file, err := uc.storage.Read(ctx, book.FilePath)
 	if err != nil {
 		return book, nil, fmt.Errorf("BookShelf - DownloadBook - s.storage.Read: %s", err)
-	}
-
-	rewritten, rewriteErr := metadata.RewriteDownloadedMetadata(file, book.Format, metadata.Metadata{
-		Title:       book.Title,
-		Author:      book.Author,
-		Description: book.Description,
-		Publisher:   book.Publisher,
-		ISBN:        book.ISBN,
-	})
-	if rewriteErr != nil {
-		uc.logger.Error("BookShelf - DownloadBook - rewrite metadata failed: %s", rewriteErr)
-		return book, file, nil
-	}
-	if rewritten != file {
-		_ = file.Close()
-		file = rewritten
 	}
 	return book, file, nil
 }

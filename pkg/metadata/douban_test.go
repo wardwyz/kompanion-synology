@@ -13,8 +13,8 @@ func TestApplyDefaults(t *testing.T) {
 	if m.Description != "No description available" {
 		t.Fatalf("expected default description, got %q", m.Description)
 	}
-	if m.Publisher != "Unknown Publisher" {
-		t.Fatalf("expected default publisher, got %q", m.Publisher)
+	if m.Publisher != "" {
+		t.Fatalf("expected empty publisher default, got %q", m.Publisher)
 	}
 }
 

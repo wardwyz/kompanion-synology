@@ -111,9 +111,6 @@ func applyDefaults(m Metadata, uploadedFilename string) Metadata {
 	if strings.TrimSpace(m.Description) == "" {
 		m.Description = "No description available"
 	}
-	if strings.TrimSpace(m.Publisher) == "" {
-		m.Publisher = "Unknown Publisher"
-	}
 	return m
 }
 

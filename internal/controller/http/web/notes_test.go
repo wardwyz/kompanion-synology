@@ -117,8 +117,8 @@ func TestNotesToMarkdown(t *testing.T) {
 		},
 	})
 
-	if !strings.Contains(out, "# 三国演义") {
-		t.Fatalf("expected book heading, got %s", out)
+	if strings.Contains(out, "\n# 三国演义") || strings.HasPrefix(out, "# 三国演义") {
+		t.Fatalf("did not expect top-level book heading, got %s", out)
 	}
 	if !strings.Contains(out, "## 三国演义--罗贯中") {
 		t.Fatalf("expected book and author heading, got %s", out)

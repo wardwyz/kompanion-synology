@@ -170,9 +170,6 @@ func normalizeNoteBody(body string) string {
 func notesToMarkdown(groups []notesBookGroup) string {
 	var b strings.Builder
 	for gi, group := range groups {
-		b.WriteString("# ")
-		b.WriteString(group.Name)
-		b.WriteString("\n\n")
 		for ni, note := range group.Notes {
 			if note.Author != "" {
 				b.WriteString("## ")

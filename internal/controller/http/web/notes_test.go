@@ -135,8 +135,8 @@ func TestNotesToMarkdown(t *testing.T) {
 	if !strings.Contains(out, "## 三国演义--罗贯中") {
 		t.Fatalf("expected book and author heading, got %s", out)
 	}
-	if !strings.Contains(out, "桃园结义--Page 1") {
-		t.Fatalf("expected body and location format, got %s", out)
+	if !strings.Contains(out, "桃园结义\n### Page 1") {
+		t.Fatalf("expected body and location to be on separate lines, got %s", out)
 	}
 }
 

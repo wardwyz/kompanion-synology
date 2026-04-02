@@ -184,8 +184,9 @@ func notesToMarkdown(groups []notesBookGroup) string {
 			}
 			if note.Location != "" {
 				if note.Content != "" {
-					b.WriteString("--")
+					b.WriteString("\n")
 				}
+				b.WriteString("### ")
 				b.WriteString(note.Location)
 			}
 			b.WriteString("\n")

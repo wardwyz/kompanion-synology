@@ -206,10 +206,9 @@ func (uc *BookShelf) persistMetadataToSourceFile(ctx context.Context, currentBoo
 	if err != nil {
 		return fmt.Errorf("rewrite metadata: %w", err)
 	}
-	if rewritten == source {
-		return nil
+	if rewritten != source {
+		defer rewritten.Close()
 	}
-	defer rewritten.Close()
 
 	tempOut, err := os.CreateTemp("", "kompanion-rewrite-source-*")
 	if err != nil {
@@ -248,6 +247,8 @@ func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Bo
 		Title:       book.Title,
 		Author:      book.Author,
 		Description: book.Description,
+		Publisher:   book.Publisher,
+		ISBN:        book.ISBN,
 	})
 	if rewriteErr != nil {
 		uc.logger.Error("BookShelf - DownloadBook - rewrite metadata failed: %s", rewriteErr)

@@ -75,6 +75,55 @@ func TestRewriteDownloadedMetadataEPUB(t *testing.T) {
 	}
 }
 
+func TestRewriteDownloadedMetadataEPUBWithOnlyPublisherAndISBN(t *testing.T) {
+	src := buildTestEPUB(t, `<package><metadata><dc:title>Old</dc:title><dc:publisher>P0</dc:publisher><dc:identifier>ID0</dc:identifier></metadata></package>`)
+	defer os.Remove(src.Name())
+	defer src.Close()
+
+	rewritten, err := RewriteDownloadedMetadata(src, "epub", Metadata{
+		Publisher: "人民文学出版社",
+		ISBN:      "9787100000000",
+	})
+	if err != nil {
+		t.Fatalf("rewrite failed: %v", err)
+	}
+	defer rewritten.Close()
+
+	if rewritten == src {
+		t.Fatal("expected a rewritten file when only publisher/isbn are provided")
+	}
+
+	info, err := rewritten.Stat()
+	if err != nil {
+		t.Fatalf("stat rewritten failed: %v", err)
+	}
+	zr, err := zip.NewReader(rewritten, info.Size())
+	if err != nil {
+		t.Fatalf("open zip failed: %v", err)
+	}
+
+	var opfBody string
+	for _, f := range zr.File {
+		if f.Name != "OEBPS/content.opf" {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatalf("open opf failed: %v", err)
+		}
+		data, _ := io.ReadAll(rc)
+		_ = rc.Close()
+		opfBody = string(data)
+	}
+
+	if !strings.Contains(opfBody, `<dc:publisher>人民文学出版社</dc:publisher>`) {
+		t.Fatalf("expected publisher rewritten, got: %s", opfBody)
+	}
+	if !strings.Contains(opfBody, `<dc:identifier>9787100000000</dc:identifier>`) {
+		t.Fatalf("expected identifier rewritten, got: %s", opfBody)
+	}
+}
+
 func buildTestEPUB(t *testing.T, opfContent string) *os.File {
 	t.Helper()
 

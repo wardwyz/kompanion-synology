@@ -31,6 +31,15 @@ func AutoScrapeDouban(original Metadata) Metadata {
 	if err != nil {
 		return original
 	}
+	return mergeScrapedMetadata(original, scraped)
+}
+
+func mergeScrapedMetadata(original Metadata, scraped Metadata) Metadata {
+	// Prefer embedded/local title (e.g. EPUB title) and avoid replacing it with
+	// marketplace-specific long subtitle variants from scraped pages.
+	if strings.TrimSpace(original.Title) != "" {
+		scraped.Title = ""
+	}
 	return mergeMetadata(original, scraped)
 }
 

@@ -66,6 +66,40 @@ func TestMergeMetadataOverride(t *testing.T) {
 	}
 }
 
+func TestMergeScrapedMetadata_KeepsOriginalTitle(t *testing.T) {
+	original := Metadata{
+		Title:       "刀锋",
+		Author:      "毛姆",
+		Description: "本地描述",
+	}
+	scraped := Metadata{
+		Title:       "刀锋(“故事高手”毛姆晚年重要作品，兰登书屋典藏本全文翻译)(果麦经典)",
+		Author:      "威廉·萨默赛特·毛姆",
+		Description: "豆瓣描述",
+	}
+
+	got := mergeScrapedMetadata(original, scraped)
+	if got.Title != "刀锋" {
+		t.Fatalf("expected original title to be preserved, got %q", got.Title)
+	}
+	if got.Author != "威廉·萨默赛特·毛姆" {
+		t.Fatalf("expected author to still be enriched, got %q", got.Author)
+	}
+	if got.Description != "豆瓣描述" {
+		t.Fatalf("expected description to still be enriched, got %q", got.Description)
+	}
+}
+
+func TestMergeScrapedMetadata_UsesScrapedTitleWhenOriginalMissing(t *testing.T) {
+	original := Metadata{}
+	scraped := Metadata{Title: "三体"}
+
+	got := mergeScrapedMetadata(original, scraped)
+	if got.Title != "三体" {
+		t.Fatalf("expected scraped title when original is empty, got %q", got.Title)
+	}
+}
+
 func TestParseDoubanBookPageExtractsAuthorAndSeries(t *testing.T) {
 	body := `
 <html>

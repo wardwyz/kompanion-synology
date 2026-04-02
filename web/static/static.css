@@ -115,7 +115,10 @@
 }
 
 .reading-note-location {
+  display: block;
+  margin-top: 0.5rem;
   font-size: 0.85em;
+  text-align: right;
 }
 
 .reading-note-body p,

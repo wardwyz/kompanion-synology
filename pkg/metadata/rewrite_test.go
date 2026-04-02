@@ -36,6 +36,21 @@ func TestReplaceOPFMetadata(t *testing.T) {
 	}
 }
 
+func TestReplaceOPFMetadata_InsertWhenTagMissing(t *testing.T) {
+	input := `<package><metadata><dc:title>Old</dc:title></metadata></package>`
+	got := string(replaceOPFMetadata([]byte(input), Metadata{
+		Publisher: "人民文学出版社",
+		ISBN:      "9787100000000",
+	}))
+
+	if !strings.Contains(got, `<dc:publisher>人民文学出版社</dc:publisher>`) {
+		t.Fatalf("publisher not inserted: %s", got)
+	}
+	if !strings.Contains(got, `<dc:identifier>9787100000000</dc:identifier>`) {
+		t.Fatalf("identifier not inserted: %s", got)
+	}
+}
+
 func TestRewriteDownloadedMetadataEPUB(t *testing.T) {
 	src := buildTestEPUB(t, `<package><metadata><dc:title>Old</dc:title></metadata></package>`)
 	defer os.Remove(src.Name())
@@ -76,7 +91,7 @@ func TestRewriteDownloadedMetadataEPUB(t *testing.T) {
 }
 
 func TestRewriteDownloadedMetadataEPUBWithOnlyPublisherAndISBN(t *testing.T) {
-	src := buildTestEPUB(t, `<package><metadata><dc:title>Old</dc:title><dc:publisher>P0</dc:publisher><dc:identifier>ID0</dc:identifier></metadata></package>`)
+	src := buildTestEPUB(t, `<package><metadata><dc:title>Old</dc:title></metadata></package>`)
 	defer os.Remove(src.Name())
 	defer src.Close()
 

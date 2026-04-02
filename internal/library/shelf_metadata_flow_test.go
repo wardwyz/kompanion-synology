@@ -1,13 +1,9 @@
 package library
 
 import (
-	"archive/zip"
 	"context"
 	"errors"
-	"io"
 	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -49,10 +45,10 @@ func (r *flowTestRepo) Update(_ context.Context, b entity.Book) error {
 }
 func (r *flowTestRepo) Delete(context.Context, string) error { return nil }
 
-func TestUploadScrapeThenDownloadHasRewrittenTitleMetadata(t *testing.T) {
+func TestUploadScrapeThenDownloadDoesNotRewriteFileMetadata(t *testing.T) {
 	ctx := context.Background()
 
-	uploaded := buildFlowTestEPUB(t, `<package><metadata><dc:title>Old Title</dc:title></metadata></package>`)
+	uploaded := createTempFlowFile(t, "original file content")
 	defer os.Remove(uploaded.Name())
 	defer uploaded.Close()
 
@@ -87,64 +83,33 @@ func TestUploadScrapeThenDownloadHasRewrittenTitleMetadata(t *testing.T) {
 	}
 	defer downloaded.Close()
 
-	info, err := downloaded.Stat()
+	downloadedData, err := os.ReadFile(downloaded.Name())
 	if err != nil {
-		t.Fatalf("stat downloaded failed: %v", err)
+		t.Fatalf("read downloaded failed: %v", err)
 	}
 
-	zr, err := zip.NewReader(downloaded, info.Size())
-	if err != nil {
-		t.Fatalf("open downloaded zip failed: %v", err)
-	}
-
-	opfBody := ""
-	for _, f := range zr.File {
-		if f.Name != filepath.ToSlash("OEBPS/content.opf") {
-			continue
-		}
-		rc, err := f.Open()
-		if err != nil {
-			t.Fatalf("open opf failed: %v", err)
-		}
-		data, _ := io.ReadAll(rc)
-		_ = rc.Close()
-		opfBody = string(data)
-	}
-
-	if !strings.Contains(opfBody, "<dc:title>豆瓣新标题</dc:title>") {
-		t.Fatalf("expected downloaded metadata title updated, got: %s", opfBody)
+	if string(downloadedData) != "original file content" {
+		t.Fatalf("expected downloaded file unchanged, got: %s", string(downloadedData))
 	}
 }
 
-func buildFlowTestEPUB(t *testing.T, opfContent string) *os.File {
+func createTempFlowFile(t *testing.T, content string) *os.File {
 	t.Helper()
 
-	tmp, err := os.CreateTemp("", "flow-metadata-test-*.epub")
+	tmp, err := os.CreateTemp("", "flow-file-test-*")
 	if err != nil {
 		t.Fatalf("create temp failed: %v", err)
 	}
-
-	zw := zip.NewWriter(tmp)
-	writeZipFile := func(name, content string) {
-		w, err := zw.Create(name)
-		if err != nil {
-			t.Fatalf("create zip entry %s failed: %v", name, err)
-		}
-		if _, err := w.Write([]byte(content)); err != nil {
-			t.Fatalf("write zip entry %s failed: %v", name, err)
-		}
+	if _, err := tmp.WriteString(content); err != nil {
+		t.Fatalf("write temp file failed: %v", err)
 	}
 
-	writeZipFile("META-INF/container.xml", `<?xml version="1.0"?><container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>`)
-	writeZipFile(filepath.ToSlash("OEBPS/content.opf"), opfContent)
-
-	if err := zw.Close(); err != nil {
-		t.Fatalf("close zip writer failed: %v", err)
+	if _, err := tmp.Seek(0, 0); err != nil {
+		t.Fatalf("seek temp file failed: %v", err)
 	}
 	if err := tmp.Close(); err != nil {
 		t.Fatalf("close temp file failed: %v", err)
 	}
-
 	reopened, err := os.Open(tmp.Name())
 	if err != nil {
 		t.Fatalf("reopen temp file failed: %v", err)

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Metadata struct {
@@ -19,6 +21,13 @@ type Metadata struct {
 	Series      string
 	SeriesIndex string
 	Cover       []byte
+}
+
+// ApplyDefaultsAndAutoScrape applies local defaults first, then tries Douban scraping.
+// If scraping fails, defaults remain unchanged.
+func ApplyDefaultsAndAutoScrape(m Metadata, uploadedFilename string) Metadata {
+	defaults := applyDefaults(m, uploadedFilename)
+	return AutoScrapeDouban(defaults)
 }
 
 // ExtractBookMetadata extracts metadata from a book file
@@ -72,4 +81,59 @@ func guessExtention(file *os.File) (string, error) {
 	default:
 		return "", nil
 	}
+}
+
+func applyDefaults(m Metadata, uploadedFilename string) Metadata {
+	if strings.TrimSpace(m.Title) == "" {
+		base := strings.TrimSpace(strings.TrimSuffix(filepath.Base(uploadedFilename), filepath.Ext(uploadedFilename)))
+		if base == "" {
+			m.Title = "Unknown Title"
+		} else {
+			m.Title = base
+		}
+	}
+	if strings.TrimSpace(m.Author) == "" {
+		m.Author = "Unknown Author"
+	}
+	if strings.TrimSpace(m.Description) == "" {
+		m.Description = "No description available"
+	}
+	if strings.TrimSpace(m.Publisher) == "" {
+		m.Publisher = "Unknown Publisher"
+	}
+	return m
+}
+
+func mergeMetadata(base Metadata, override Metadata) Metadata {
+	if strings.TrimSpace(override.ISBN) != "" {
+		base.ISBN = strings.TrimSpace(override.ISBN)
+	}
+	if strings.TrimSpace(override.Title) != "" {
+		base.Title = strings.TrimSpace(override.Title)
+	}
+	if strings.TrimSpace(override.Description) != "" {
+		base.Description = strings.TrimSpace(override.Description)
+	}
+	if strings.TrimSpace(override.Author) != "" {
+		base.Author = strings.TrimSpace(override.Author)
+	}
+	if strings.TrimSpace(override.Date) != "" {
+		base.Date = strings.TrimSpace(override.Date)
+	}
+	if strings.TrimSpace(override.Publisher) != "" {
+		base.Publisher = strings.TrimSpace(override.Publisher)
+	}
+	if strings.TrimSpace(override.Language) != "" {
+		base.Language = strings.TrimSpace(override.Language)
+	}
+	if strings.TrimSpace(override.Series) != "" {
+		base.Series = strings.TrimSpace(override.Series)
+	}
+	if strings.TrimSpace(override.SeriesIndex) != "" {
+		base.SeriesIndex = strings.TrimSpace(override.SeriesIndex)
+	}
+	if len(override.Cover) > 0 {
+		base.Cover = override.Cover
+	}
+	return base
 }

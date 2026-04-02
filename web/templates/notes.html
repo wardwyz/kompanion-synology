@@ -39,7 +39,7 @@
             </header>
 
             <div class="reading-note-body">
-                {{ .Content }}{{ if .Location }}<small class="reading-note-location">--{{ .Location }}</small>{{ end }}
+                {{ .ContentHTML }}
             </div>
         </article>
         {{ end }}

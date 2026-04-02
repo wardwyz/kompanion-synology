@@ -32,9 +32,6 @@ type Book struct {
 
 func (b Book) extension() string {
 	ext := strings.TrimPrefix(filepath.Ext(strings.TrimSpace(b.FilePath)), ".")
-	if ext == "" {
-		return "epub"
-	}
 	return ext
 }
 
@@ -46,7 +43,11 @@ func (b Book) Filename() string {
 	if title == "" {
 		title = "book"
 	}
-	return title + "." + b.extension()
+	ext := b.extension()
+	if ext == "" {
+		ext = "epub"
+	}
+	return title + "." + ext
 }
 
 func (b Book) MimeType() string {

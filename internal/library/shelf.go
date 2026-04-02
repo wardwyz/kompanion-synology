@@ -158,12 +158,56 @@ func (uc *BookShelf) UpdateBookMetadata(ctx context.Context, bookID string, meta
 		updatedBook.SeriesIndex = book.SeriesIndex
 	}
 
+	if err = uc.syncStoredFileMetadata(ctx, book, updatedBook); err != nil {
+		return entity.Book{}, fmt.Errorf("BookShelf - UpdateBookMetadata - syncStoredFileMetadata: %w", err)
+	}
+
 	err = uc.repo.Update(ctx, updatedBook)
 	if err != nil {
 		return entity.Book{}, fmt.Errorf("BookShelf - UpdateBookMetadata - s.repo.Update: %w", err)
 	}
 
 	return updatedBook, nil
+}
+
+func (uc *BookShelf) syncStoredFileMetadata(ctx context.Context, originalBook, updatedBook entity.Book) error {
+	if originalBook.MimeType() != "application/epub+zip" {
+		return nil
+	}
+
+	sourceFile, err := uc.storage.Read(ctx, originalBook.FilePath)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	rewritten, err := metadata.RewriteEPUBMetadata(sourceFile.Name(), metadata.Metadata{
+		Title:       updatedBook.Title,
+		Author:      updatedBook.Author,
+		Description: updatedBook.Description,
+		Publisher:   updatedBook.Publisher,
+		ISBN:        updatedBook.ISBN,
+		Series:      updatedBook.Series,
+		SeriesIndex: func() string {
+			if updatedBook.SeriesIndex != nil && updatedBook.SeriesIndex.Valid {
+				return updatedBook.SeriesIndex.Decimal.String()
+			}
+			return ""
+		}(),
+	})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		rewritten.Close()
+		_ = os.Remove(rewritten.Name())
+	}()
+
+	if err = uc.storage.Write(ctx, rewritten.Name(), originalBook.FilePath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Book, *os.File, error) {
@@ -174,29 +218,6 @@ func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Bo
 	file, err := uc.storage.Read(ctx, book.FilePath)
 	if err != nil {
 		return book, nil, fmt.Errorf("BookShelf - DownloadBook - s.storage.Read: %s", err)
-	}
-
-	if book.MimeType() == "application/epub+zip" {
-		rewritten, rewriteErr := metadata.RewriteEPUBMetadata(file.Name(), metadata.Metadata{
-			Title:       book.Title,
-			Author:      book.Author,
-			Description: book.Description,
-			Publisher:   book.Publisher,
-			ISBN:        book.ISBN,
-			Series:      book.Series,
-			SeriesIndex: func() string {
-				if book.SeriesIndex != nil && book.SeriesIndex.Valid {
-					return book.SeriesIndex.Decimal.String()
-				}
-				return ""
-			}(),
-		})
-		if rewriteErr != nil {
-			uc.logger.Warn("BookShelf - DownloadBook - RewriteEPUBMetadata: %v", rewriteErr)
-		} else {
-			_ = file.Close()
-			file = rewritten
-		}
 	}
 
 	return book, file, nil

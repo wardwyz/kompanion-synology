@@ -16,6 +16,8 @@ var (
 	opfTitlePattern       = regexp.MustCompile(`(?is)<dc:title[^>]*>.*?</dc:title>`)
 	opfCreatorPattern     = regexp.MustCompile(`(?is)<dc:creator[^>]*>.*?</dc:creator>`)
 	opfDescriptionPattern = regexp.MustCompile(`(?is)<dc:description[^>]*>.*?</dc:description>`)
+	opfPublisherPattern   = regexp.MustCompile(`(?is)<dc:publisher[^>]*>.*?</dc:publisher>`)
+	opfIdentifierPattern  = regexp.MustCompile(`(?is)<dc:identifier[^>]*>.*?</dc:identifier>`)
 	fb2TitlePattern       = regexp.MustCompile(`(?is)<book-title>.*?</book-title>`)
 )
 
@@ -202,6 +204,14 @@ func replaceOPFMetadata(content []byte, m Metadata) []byte {
 	if desc := strings.TrimSpace(m.Description); desc != "" {
 		replacement := "<dc:description>" + xmlEscape(desc) + "</dc:description>"
 		updated = opfDescriptionPattern.ReplaceAllString(updated, replacement)
+	}
+	if publisher := strings.TrimSpace(m.Publisher); publisher != "" {
+		replacement := "<dc:publisher>" + xmlEscape(publisher) + "</dc:publisher>"
+		updated = opfPublisherPattern.ReplaceAllString(updated, replacement)
+	}
+	if isbn := strings.TrimSpace(m.ISBN); isbn != "" {
+		replacement := "<dc:identifier>" + xmlEscape(isbn) + "</dc:identifier>"
+		updated = opfIdentifierPattern.ReplaceAllString(updated, replacement)
 	}
 	return []byte(updated)
 }

@@ -10,8 +10,14 @@ import (
 )
 
 func TestReplaceOPFMetadata(t *testing.T) {
-	input := `<package><metadata><dc:title>Old</dc:title><dc:creator>A</dc:creator><dc:description>D</dc:description></metadata></package>`
-	got := string(replaceOPFMetadata([]byte(input), Metadata{Title: `新书名`, Author: `新作者`, Description: `新简介 & test`}))
+	input := `<package><metadata><dc:title>Old</dc:title><dc:creator>A</dc:creator><dc:description>D</dc:description><dc:publisher>P0</dc:publisher><dc:identifier>ID0</dc:identifier></metadata></package>`
+	got := string(replaceOPFMetadata([]byte(input), Metadata{
+		Title:       `新书名`,
+		Author:      `新作者`,
+		Description: `新简介 & test`,
+		Publisher:   `人民文学出版社`,
+		ISBN:        `9787100000000`,
+	}))
 
 	if !strings.Contains(got, `<dc:title>新书名</dc:title>`) {
 		t.Fatalf("title not updated: %s", got)
@@ -21,6 +27,12 @@ func TestReplaceOPFMetadata(t *testing.T) {
 	}
 	if !strings.Contains(got, `<dc:description>新简介 &amp; test</dc:description>`) {
 		t.Fatalf("description not updated: %s", got)
+	}
+	if !strings.Contains(got, `<dc:publisher>人民文学出版社</dc:publisher>`) {
+		t.Fatalf("publisher not updated: %s", got)
+	}
+	if !strings.Contains(got, `<dc:identifier>9787100000000</dc:identifier>`) {
+		t.Fatalf("identifier not updated: %s", got)
 	}
 }
 

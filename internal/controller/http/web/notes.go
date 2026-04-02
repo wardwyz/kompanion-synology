@@ -20,6 +20,7 @@ var markdownBookHeadingPattern = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
 var notesDisplayLocation = time.FixedZone("UTC+8", 8*60*60)
 var markdownItalicLinePattern = regexp.MustCompile(`^\*(.+)\*$`)
 var markdownAuthorPattern = regexp.MustCompile(`(?m)^#####\s+(.+?)\s*$`)
+var inlinePageLocationPattern = regexp.MustCompile(`^(?s)(.*?)\s*--\s*(Page\s+\d+(?:\s*@\s*.+)?)\s*$`)
 
 type notesRoutes struct {
 	notes  notes.Service
@@ -413,7 +414,11 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 			continue
 		}
 		text := strings.TrimSpace(m[1])
+		text, inlineLocation := splitInlinePageLocation(text)
 		part := notePart{text: text, location: currentLocation}
+		if part.location == "" && inlineLocation != "" {
+			part.location = inlineLocation
+		}
 		if part.location != "" {
 			hasLocatedPart = true
 		}
@@ -447,6 +452,14 @@ func parseStructuredReadingNote(markdown string) (author, location, content stri
 		contentParts = append(contentParts, part.text)
 	}
 	return author, "", strings.Join(contentParts, "\n")
+}
+
+func splitInlinePageLocation(text string) (content, location string) {
+	matches := inlinePageLocationPattern.FindStringSubmatch(text)
+	if len(matches) != 3 {
+		return text, ""
+	}
+	return strings.TrimSpace(matches[1]), strings.TrimSpace(matches[2])
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

@@ -91,6 +91,18 @@ func TestParseStructuredReadingNote_MultipleLocationsInTemplate(t *testing.T) {
 	}
 }
 
+func TestParseStructuredReadingNote_ExtractInlinePageLocation(t *testing.T) {
+	markdown := "*一个人可以被生活打败，但是不能被它打倒。--Page 4 @ 30 March 2026 11:05:50 AM*"
+	_, location, content := parseStructuredReadingNote(markdown)
+
+	if location != "Page 4 @ 30 March 2026 11:05:50 AM" {
+		t.Fatalf("expected inline page location to be extracted, got %q", location)
+	}
+	if content != "一个人可以被生活打败，但是不能被它打倒。" {
+		t.Fatalf("expected inline page marker to be removed from content, got %q", content)
+	}
+}
+
 func TestParseStructuredReadingNote_KeepHighlightsAcrossSecondLevelHeadings(t *testing.T) {
 	markdown := "## 导论\n### Page 75 @ 24 March 2026 12:01:32 PM\n*第一条*\n## 第一章\n### Page 86 @ 24 March 2026 12:25:05 PM\n*第二条*"
 	_, location, content := parseStructuredReadingNote(markdown)

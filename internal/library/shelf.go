@@ -190,6 +190,20 @@ func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Bo
 	if err != nil {
 		return book, nil, fmt.Errorf("BookShelf - DownloadBook - s.storage.Read: %s", err)
 	}
+
+	rewritten, rewriteErr := metadata.RewriteDownloadedMetadata(file, book.Format, metadata.Metadata{
+		Title:       book.Title,
+		Author:      book.Author,
+		Description: book.Description,
+	})
+	if rewriteErr != nil {
+		uc.logger.Error("BookShelf - DownloadBook - rewrite metadata failed: %s", rewriteErr)
+		return book, file, nil
+	}
+	if rewritten != file {
+		_ = file.Close()
+		file = rewritten
+	}
 	return book, file, nil
 }
 

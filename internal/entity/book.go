@@ -23,7 +23,7 @@ type Book struct {
 	SeriesIndex *decimal.NullDecimal   `form:"series_index"` // position in the series (nullable)
 	CreatedAt   time.Time              // timestamp of when the book was created
 	UpdatedAt   time.Time              // timestamp of when the book was last updated
-	ISBN        string                 // ISBN of the book
+	ISBN        string                 `form:"isbn"`         // ISBN of the book
 	DocumentID  string                 // md5 hash for file content
 	FilePath    string                 // path to the book file
 	Format      string                 // format of the book file

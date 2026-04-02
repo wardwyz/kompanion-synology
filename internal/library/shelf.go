@@ -175,6 +175,30 @@ func (uc *BookShelf) DownloadBook(ctx context.Context, bookID string) (entity.Bo
 	if err != nil {
 		return book, nil, fmt.Errorf("BookShelf - DownloadBook - s.storage.Read: %s", err)
 	}
+
+	if book.MimeType() == "application/epub+zip" {
+		rewritten, rewriteErr := metadata.RewriteEPUBMetadata(file.Name(), metadata.Metadata{
+			Title:       book.Title,
+			Author:      book.Author,
+			Description: book.Description,
+			Publisher:   book.Publisher,
+			ISBN:        book.ISBN,
+			Series:      book.Series,
+			SeriesIndex: func() string {
+				if book.SeriesIndex != nil && book.SeriesIndex.Valid {
+					return book.SeriesIndex.Decimal.String()
+				}
+				return ""
+			}(),
+		})
+		if rewriteErr != nil {
+			uc.logger.Warn("BookShelf - DownloadBook - RewriteEPUBMetadata: %v", rewriteErr)
+		} else {
+			_ = file.Close()
+			file = rewritten
+		}
+	}
+
 	return book, file, nil
 }
 

@@ -90,6 +90,20 @@ func TestMergeScrapedMetadata_KeepsOriginalTitle(t *testing.T) {
 	}
 }
 
+func TestMergeScrapedMetadata_UsesScrapedCleanerTitle(t *testing.T) {
+	original := Metadata{
+		Title: "刀锋(“故事高手”毛姆晚年重要作品，兰登书屋典藏本全文翻译)(果麦经典)",
+	}
+	scraped := Metadata{
+		Title: "刀锋",
+	}
+
+	got := mergeScrapedMetadata(original, scraped)
+	if got.Title != "刀锋" {
+		t.Fatalf("expected scraped clean title to replace original, got %q", got.Title)
+	}
+}
+
 func TestMergeScrapedMetadata_UsesScrapedTitleWhenOriginalMissing(t *testing.T) {
 	original := Metadata{}
 	scraped := Metadata{Title: "三体"}
@@ -97,6 +111,43 @@ func TestMergeScrapedMetadata_UsesScrapedTitleWhenOriginalMissing(t *testing.T) 
 	got := mergeScrapedMetadata(original, scraped)
 	if got.Title != "三体" {
 		t.Fatalf("expected scraped title when original is empty, got %q", got.Title)
+	}
+}
+
+func TestShouldPreferScrapedTitle(t *testing.T) {
+	tests := []struct {
+		name     string
+		original string
+		scraped  string
+		want     bool
+	}{
+		{
+			name:     "decorated original title",
+			original: "刀锋(“故事高手”毛姆晚年重要作品，兰登书屋典藏本全文翻译)(果麦经典)",
+			scraped:  "刀锋",
+			want:     true,
+		},
+		{
+			name:     "same title",
+			original: "刀锋",
+			scraped:  "刀锋",
+			want:     false,
+		},
+		{
+			name:     "different unrelated title",
+			original: "刀锋",
+			scraped:  "月亮与六便士",
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldPreferScrapedTitle(tt.original, tt.scraped)
+			if got != tt.want {
+				t.Fatalf("shouldPreferScrapedTitle(%q, %q) = %v, want %v", tt.original, tt.scraped, got, tt.want)
+			}
+		})
 	}
 }
 

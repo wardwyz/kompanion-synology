@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/moroz/uuidv7-go"
@@ -53,7 +55,8 @@ func (uc *BookShelf) StoreBook(ctx context.Context, tempFile *os.File, uploadedF
 
 	bookID := uuidv7.Generate()
 	createDate := time.Now()
-	storagepath := fmt.Sprintf("%s/%s.%s", createDate.Format("2006/01/02"), bookID, m.Format)
+	safeFilename := sanitizeUploadedFilename(uploadedFilename, m.Format)
+	storagepath := fmt.Sprintf("%s/%s__%s", createDate.Format("2006/01/02"), bookID, safeFilename)
 
 	err = uc.storage.Write(ctx, tempFile.Name(), storagepath)
 	if err != nil {
@@ -100,6 +103,18 @@ func (uc *BookShelf) StoreBook(ctx context.Context, tempFile *os.File, uploadedF
 		return entity.Book{}, fmt.Errorf("BookShelf - StoreBook - s.repo.Store: %w", err)
 	}
 	return book, nil
+}
+
+func sanitizeUploadedFilename(uploadedFilename string, fallbackFormat string) string {
+	base := strings.TrimSpace(filepath.Base(uploadedFilename))
+	if base != "" {
+		return base
+	}
+	ext := strings.TrimSpace(fallbackFormat)
+	if ext == "" {
+		ext = "epub"
+	}
+	return "book." + ext
 }
 
 func (uc *BookShelf) ListBooks(ctx context.Context,

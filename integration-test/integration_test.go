@@ -331,8 +331,8 @@ func TestHTTPKompanionShelf(t *testing.T) {
 		Expect().Body().String().Contains(updatedAuthor),
 	)
 	// download book
-	// "attachment; filename=The Egg.epub"
-	filename := fmt.Sprintf("%s.epub", updatedTitle)
+	// "attachment; filename=book.epub"
+	filename := "book.epub"
 	Test(t,
 		HTTPClient(client),
 		Description("Kompanion Download Book"),

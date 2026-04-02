@@ -31,7 +31,46 @@ func AutoScrapeDouban(original Metadata) Metadata {
 	if err != nil {
 		return original
 	}
+	return mergeScrapedMetadata(original, scraped)
+}
+
+func mergeScrapedMetadata(original Metadata, scraped Metadata) Metadata {
+	// Prefer embedded/local title by default, but allow scraped title to replace
+	// it when scraped title is clearly a cleaner base title (e.g. original title
+	// has marketing suffixes in trailing parentheses).
+	if strings.TrimSpace(original.Title) != "" &&
+		!shouldPreferScrapedTitle(original.Title, scraped.Title) {
+		scraped.Title = ""
+	}
 	return mergeMetadata(original, scraped)
+}
+
+func shouldPreferScrapedTitle(originalTitle, scrapedTitle string) bool {
+	originalTitle = strings.TrimSpace(originalTitle)
+	scrapedTitle = strings.TrimSpace(scrapedTitle)
+
+	if originalTitle == "" || scrapedTitle == "" {
+		return false
+	}
+	if originalTitle == scrapedTitle {
+		return false
+	}
+
+	// Common case:
+	// 原始: 刀锋(“故事高手”毛姆晚年重要作品...)(果麦经典)
+	// 刮削: 刀锋
+	if strings.HasPrefix(originalTitle, scrapedTitle) {
+		return true
+	}
+
+	for _, delimiter := range []string{"(", "（"} {
+		base := strings.TrimSpace(strings.SplitN(originalTitle, delimiter, 2)[0])
+		if base != "" && base == scrapedTitle {
+			return true
+		}
+	}
+
+	return false
 }
 
 func scrapeDouban(original Metadata) (Metadata, error) {

@@ -111,12 +111,21 @@
 .reading-note-body {
   margin-top: 0.75rem;
   line-height: 1.7;
-  white-space: pre-line;
+}
+
+.reading-note-line {
+  display: flex;
+  flex-direction: column;
+  margin: 0.3rem 0;
+}
+
+.reading-note-text {
+  white-space: pre-wrap;
 }
 
 .reading-note-location {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.2rem;
   font-size: 0.85em;
   text-align: right;
 }

@@ -39,6 +39,7 @@ type readingNoteView struct {
 	Author           string
 	Location         string
 	Content          string
+	ContentHTML      template.HTML
 	DocumentID       string
 	DisplayCreatedAt string
 	CreatedAt        time.Time
@@ -151,6 +152,7 @@ func (r *notesRoutes) groupNotesByBook(items []entity.ReadingNote) []notesBookGr
 				Author:           author,
 				Location:         location,
 				Content:          content,
+				ContentHTML:      buildReadingNoteContentHTML(content, location),
 				DocumentID:       selected.note.DocumentID,
 				CreatedAt:        selected.note.CreatedAt,
 				DisplayCreatedAt: selected.note.CreatedAt.In(notesDisplayLocation).Format("2006-01-02 15:04:05"),
@@ -461,6 +463,50 @@ func splitInlinePageLocation(text string) (content, location string) {
 		return text, ""
 	}
 	return strings.TrimSpace(matches[1]), strings.TrimSpace(matches[2])
+}
+
+func buildReadingNoteContentHTML(content, location string) template.HTML {
+	lines := make([]string, 0)
+
+	if strings.TrimSpace(content) != "" {
+		lines = append(lines, strings.Split(content, "\n")...)
+	}
+	if strings.TrimSpace(location) != "" {
+		lines = append(lines, "--"+location)
+	}
+
+	if len(lines) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		lineContent, lineLocation := splitInlinePageLocation(trimmed)
+		if lineLocation == "" && strings.HasPrefix(trimmed, "--Page ") {
+			lineLocation = strings.TrimSpace(strings.TrimPrefix(trimmed, "--"))
+			lineContent = ""
+		}
+
+		b.WriteString(`<div class="reading-note-line">`)
+		if lineContent != "" {
+			b.WriteString(`<span class="reading-note-text">`)
+			b.WriteString(template.HTMLEscapeString(lineContent))
+			b.WriteString(`</span>`)
+		}
+		if lineLocation != "" {
+			b.WriteString(`<small class="reading-note-location">--`)
+			b.WriteString(template.HTMLEscapeString(lineLocation))
+			b.WriteString(`</small>`)
+		}
+		b.WriteString(`</div>`)
+	}
+
+	return template.HTML(b.String())
 }
 
 func bookNameFromMarkdown(note entity.ReadingNote) (string, string) {

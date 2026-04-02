@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,7 +15,9 @@ var (
 	doubanTitlePattern       = regexp.MustCompile(`<meta\s+property="og:title"\s+content="([^"]+)"`)
 	doubanDescriptionPattern = regexp.MustCompile(`<meta\s+property="og:description"\s+content="([^"]+)"`)
 	doubanSearchSubject      = regexp.MustCompile(`/subject/(\d+)/`)
-	doubanAuthorPattern      = regexp.MustCompile(`作者[^<]*</span>\s*([^<\n]+)`) // from info block
+	doubanInfoBlockPattern   = regexp.MustCompile(`(?s)<div[^>]+id="info"[^>]*>(.*?)</div>`)
+	doubanTagPattern         = regexp.MustCompile(`(?s)<[^>]+>`)
+	doubanSpacePattern       = regexp.MustCompile(`\s+`)
 )
 
 const doubanBaseURL = "https://book.douban.com"
@@ -116,11 +119,33 @@ func parseDoubanBookPage(body string) Metadata {
 	if description := firstSubmatch(doubanDescriptionPattern, body); description != "" {
 		m.Description = htmlUnescape(description)
 	}
-	if author := firstSubmatch(doubanAuthorPattern, body); author != "" {
-		m.Author = strings.TrimSpace(htmlUnescape(author))
+	info := firstSubmatch(doubanInfoBlockPattern, body)
+	if author := extractDoubanInfoField(info, "作者"); author != "" {
+		m.Author = author
+	}
+	if series := extractDoubanInfoField(info, "丛书"); series != "" {
+		m.Series = series
 	}
 
 	return m
+}
+
+func extractDoubanInfoField(infoBlock string, label string) string {
+	if strings.TrimSpace(infoBlock) == "" {
+		return ""
+	}
+
+	pattern := regexp.MustCompile(fmt.Sprintf(`(?is)<span[^>]*>\s*%s\s*[:：]?\s*</span>\s*(.*?)\s*(?:<br\s*/?>|$)`, regexp.QuoteMeta(label)))
+	raw := firstSubmatch(pattern, infoBlock)
+	if raw == "" {
+		return ""
+	}
+
+	cleaned := doubanTagPattern.ReplaceAllString(raw, " ")
+	cleaned = html.UnescapeString(cleaned)
+	cleaned = doubanSpacePattern.ReplaceAllString(cleaned, " ")
+	cleaned = strings.TrimSpace(strings.TrimPrefix(cleaned, ":"))
+	return cleaned
 }
 
 func firstSubmatch(pattern *regexp.Regexp, content string) string {

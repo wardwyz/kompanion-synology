@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"github.com/vanadium23/kompanion/internal/entity"
 	"github.com/vanadium23/kompanion/internal/library"
 	"github.com/vanadium23/kompanion/internal/notes"
@@ -214,7 +215,21 @@ func (r *booksRoutes) scrapeBookMetadata(c *gin.Context) {
 		Publisher:   book.Publisher,
 		ISBN:        book.ISBN,
 		Series:      book.Series,
+		SeriesIndex: func() string {
+			if book.SeriesIndex != nil && book.SeriesIndex.Valid {
+				return book.SeriesIndex.Decimal.String()
+			}
+			return ""
+		}(),
 	})
+
+	var seriesIndex *decimal.NullDecimal
+	if enriched.SeriesIndex != "" {
+		if d, parseErr := decimal.NewFromString(enriched.SeriesIndex); parseErr == nil {
+			index := decimal.NewNullDecimal(d)
+			seriesIndex = &index
+		}
+	}
 
 	_, err = r.shelf.UpdateBookMetadata(c.Request.Context(), bookID, entity.Book{
 		Title:       enriched.Title,
@@ -223,6 +238,7 @@ func (r *booksRoutes) scrapeBookMetadata(c *gin.Context) {
 		Publisher:   enriched.Publisher,
 		ISBN:        enriched.ISBN,
 		Series:      enriched.Series,
+		SeriesIndex: seriesIndex,
 	})
 	if err != nil {
 		r.logger.Error(err, "http - web - shelf - scrapeBookMetadata")

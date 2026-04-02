@@ -69,11 +69,9 @@
             </div>
 
             <div class="grid">
+                <button type="submit" class="button" formaction="/books/{{.ID}}/scrape" formmethod="post">刮削</button>
                 <button type="submit" class="button success">保存</button>
                 <button type="button" class="button"><a href="/books/{{.ID}}/download" target="_blank">下载</a></button>
-            </div>
-            <div style="margin-top: 0.5rem;">
-                <button type="submit" class="button" formaction="/books/{{.ID}}/scrape" formmethod="post">自动刮削元数据</button>
             </div>
         </form>
     </div>

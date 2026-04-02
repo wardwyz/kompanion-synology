@@ -49,6 +49,8 @@ func (uc *BookShelf) StoreBook(ctx context.Context, tempFile *os.File, uploadedF
 		return entity.Book{}, errors.New("BookShelf - StoreBook - unknown file format")
 	}
 
+	m = metadata.ApplyDefaultsAndAutoScrape(m, uploadedFilename)
+
 	bookID := uuidv7.Generate()
 	createDate := time.Now()
 	storagepath := fmt.Sprintf("%s/%s.%s", createDate.Format("2006/01/02"), bookID, m.Format)

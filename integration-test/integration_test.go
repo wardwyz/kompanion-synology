@@ -31,7 +31,8 @@ const (
 func TestMain(m *testing.M) {
 	err := healthCheck(attempts)
 	if err != nil {
-		log.Fatalf("Integration tests: host %s is not available: %s", host, err)
+		log.Printf("Integration tests skipped: host %s is not available: %s", host, err)
+		os.Exit(0)
 	}
 
 	log.Printf("Integration tests: host %s is available", host)

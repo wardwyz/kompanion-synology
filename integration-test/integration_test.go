@@ -332,7 +332,7 @@ func TestHTTPKompanionShelf(t *testing.T) {
 	)
 	// download book
 	// "attachment; filename=The Egg.epub"
-	filename := fmt.Sprintf("%s - %s -- %s.epub", updatedTitle, updatedAuthor, bookID)
+	filename := fmt.Sprintf("%s.epub", updatedTitle)
 	Test(t,
 		HTTPClient(client),
 		Description("Kompanion Download Book"),

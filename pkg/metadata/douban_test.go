@@ -18,6 +18,26 @@ func TestApplyDefaults(t *testing.T) {
 	}
 }
 
+func TestApplyDefaults_UsesFilenameTitleAuthorPattern(t *testing.T) {
+	m := applyDefaults(Metadata{}, "uploads/三体 -- 刘慈欣.epub")
+	if m.Title != "三体" {
+		t.Fatalf("expected title 三体, got %q", m.Title)
+	}
+	if m.Author != "刘慈欣" {
+		t.Fatalf("expected author 刘慈欣 from filename, got %q", m.Author)
+	}
+}
+
+func TestApplyDefaults_UsesCompactPlusSeparator(t *testing.T) {
+	m := applyDefaults(Metadata{}, "uploads/三体+刘慈欣.epub")
+	if m.Title != "三体" {
+		t.Fatalf("expected title 三体, got %q", m.Title)
+	}
+	if m.Author != "刘慈欣" {
+		t.Fatalf("expected author 刘慈欣 from filename, got %q", m.Author)
+	}
+}
+
 func TestMergeMetadataOverride(t *testing.T) {
 	base := Metadata{
 		Title:       "本地标题",

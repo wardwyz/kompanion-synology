@@ -97,21 +97,60 @@ func guessExtention(file *os.File) (string, error) {
 }
 
 func applyDefaults(m Metadata, uploadedFilename string) Metadata {
+	parsedTitle, parsedAuthor := parseTitleAuthorFromFilename(uploadedFilename)
+
 	if strings.TrimSpace(m.Title) == "" {
-		base := strings.TrimSpace(strings.TrimSuffix(filepath.Base(uploadedFilename), filepath.Ext(uploadedFilename)))
-		if base == "" {
+		if parsedTitle == "" {
 			m.Title = "Unknown Title"
 		} else {
-			m.Title = base
+			m.Title = parsedTitle
 		}
 	}
 	if strings.TrimSpace(m.Author) == "" {
-		m.Author = "Unknown Author"
+		if parsedAuthor != "" {
+			m.Author = parsedAuthor
+		} else {
+			m.Author = "Unknown Author"
+		}
 	}
 	if strings.TrimSpace(m.Description) == "" {
 		m.Description = "No description available"
 	}
 	return m
+}
+
+func parseTitleAuthorFromFilename(uploadedFilename string) (string, string) {
+	base := strings.TrimSpace(strings.TrimSuffix(filepath.Base(uploadedFilename), filepath.Ext(uploadedFilename)))
+	if base == "" {
+		return "", ""
+	}
+
+	for _, delimiter := range []string{" -- ", " —— ", " - ", " — ", " + ", " ＋ "} {
+		parts := strings.SplitN(base, delimiter, 2)
+		if len(parts) != 2 {
+			continue
+		}
+		title := strings.TrimSpace(parts[0])
+		author := strings.TrimSpace(parts[1])
+		if title != "" {
+			return title, author
+		}
+	}
+
+	// Some libraries use compact naming like "书名+作者.epub" without spaces.
+	for _, delimiter := range []string{"+", "＋"} {
+		parts := strings.SplitN(base, delimiter, 2)
+		if len(parts) != 2 {
+			continue
+		}
+		title := strings.TrimSpace(parts[0])
+		author := strings.TrimSpace(parts[1])
+		if title != "" && author != "" {
+			return title, author
+		}
+	}
+
+	return base, ""
 }
 
 func mergeMetadata(base Metadata, override Metadata) Metadata {

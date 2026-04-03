@@ -45,9 +45,12 @@
                 阅读进度：{{ generateProgressBar .Progress 15 }} // {{ .Progress }}%
             </p>
 
-            <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
-                <button class="delete-btn" type="submit">删除</button>
-            </form>
+            <div class="book-card-actions">
+                <a class="book-douban-link" href="https://m.douban.com/search/?query={{ urlquery .Title }}" target="_blank" rel="noopener noreferrer">豆瓣搜索</a>
+                <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
+                    <button class="delete-btn" type="submit">删除</button>
+                </form>
+            </div>
         </div>
     </div>
     {{ end }}

@@ -75,10 +75,16 @@
             <div class="grid">
                 <button type="submit" class="button success">保存</button>
                 <button type="button" class="button"><a href="/books/{{.ID}}/download" target="_blank">下载</a></button>
-                <form method="post" action="/books/{{.ID}}/delete" onsubmit="return confirm('确定删除这本书吗？此操作不可恢复！');">
-                <button class="delete-btn" type="submit">删除</button>
-                </form>
-                
+                <button
+                    class="delete-btn"
+                    type="submit"
+                    formaction="/books/{{.ID}}/delete"
+                    formmethod="post"
+                    formnovalidate
+                    onclick="return confirm('确定删除这本书吗？此操作不可恢复！');"
+                >
+                    删除
+                </button>
             </div>
         </form>
     </div>

@@ -206,3 +206,17 @@ func TestParseDoubanBookPageExtractsPlainTextAuthor(t *testing.T) {
 		t.Fatalf("expected plain text author, got %q", got.Author)
 	}
 }
+
+func TestParseDoubanBookPageExtractsRatingWithDifferentClassOrder(t *testing.T) {
+	body := `
+<html>
+  <head>
+	<strong class="rating_num ll" property="v:average">8.7</strong>
+  </head>
+</html>`
+
+	got := parseDoubanBookPage(body)
+	if got.SeriesIndex != "8.7" {
+		t.Fatalf("expected douban rating 8.7, got %q", got.SeriesIndex)
+	}
+}

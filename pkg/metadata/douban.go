@@ -14,10 +14,12 @@ import (
 var (
 	doubanTitlePattern       = regexp.MustCompile(`<meta\s+property="og:title"\s+content="([^"]+)"`)
 	doubanDescriptionPattern = regexp.MustCompile(`<meta\s+property="og:description"\s+content="([^"]+)"`)
+	doubanRatingPattern      = regexp.MustCompile(`<strong[^>]*class="ll\s+rating_num"[^>]*>([^<]+)</strong>`)
 	doubanSearchSubject      = regexp.MustCompile(`/subject/(\d+)/`)
 	doubanInfoBlockPattern   = regexp.MustCompile(`(?s)<div[^>]+id="info"[^>]*>(.*?)</div>`)
 	doubanTagPattern         = regexp.MustCompile(`(?s)<[^>]+>`)
 	doubanSpacePattern       = regexp.MustCompile(`\s+`)
+	doubanDigitsPattern      = regexp.MustCompile(`\d{4}`)
 )
 
 const doubanBaseURL = "https://book.douban.com"
@@ -158,12 +160,24 @@ func parseDoubanBookPage(body string) Metadata {
 	if description := firstSubmatch(doubanDescriptionPattern, body); description != "" {
 		m.Description = htmlUnescape(description)
 	}
+	if rating := firstSubmatch(doubanRatingPattern, body); rating != "" {
+		m.SeriesIndex = normalizeNumericField(rating)
+	}
 	info := firstSubmatch(doubanInfoBlockPattern, body)
 	if author := extractDoubanInfoField(info, "作者"); author != "" {
 		m.Author = author
 	}
 	if series := extractDoubanInfoField(info, "丛书"); series != "" {
 		m.Series = series
+	}
+	if publisher := extractDoubanInfoField(info, "出版社"); publisher != "" {
+		m.Publisher = publisher
+	}
+	if isbn := extractDoubanInfoField(info, "ISBN"); isbn != "" {
+		m.ISBN = normalizeISBN(isbn)
+	}
+	if publishedDate := extractDoubanInfoField(info, "出版年"); publishedDate != "" {
+		m.Date = normalizePublishedYear(publishedDate)
 	}
 
 	return m
@@ -207,4 +221,24 @@ func htmlUnescape(v string) string {
 	v = strings.ReplaceAll(v, "&lt;", "<")
 	v = strings.ReplaceAll(v, "&gt;", ">")
 	return v
+}
+
+func normalizePublishedYear(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if year := doubanDigitsPattern.FindString(raw); year != "" {
+		return year
+	}
+	return raw
+}
+
+func normalizeNumericField(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	raw = strings.TrimSuffix(raw, ".0")
+	return raw
 }

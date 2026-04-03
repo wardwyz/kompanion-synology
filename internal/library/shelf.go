@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +26,8 @@ type BookShelf struct {
 	repo    BookRepo
 	logger  logger.Interface
 }
+
+var yearPattern = regexp.MustCompile(`\d{4}`)
 
 func NewBookShelf(storage storage.Storage, repo BookRepo, l logger.Interface) *BookShelf {
 	return &BookShelf{
@@ -75,7 +79,7 @@ func (uc *BookShelf) StoreBook(ctx context.Context, tempFile *os.File, uploadedF
 		Author:      m.Author,
 		Description: m.Description,
 		Publisher:   m.Publisher,
-		Year:        0,
+		Year:        parseYearFromMetadataDate(m.Date),
 		CreatedAt:   createDate,
 		UpdatedAt:   createDate,
 		ISBN:        m.ISBN,
@@ -103,6 +107,22 @@ func (uc *BookShelf) StoreBook(ctx context.Context, tempFile *os.File, uploadedF
 		return entity.Book{}, fmt.Errorf("BookShelf - StoreBook - s.repo.Store: %w", err)
 	}
 	return book, nil
+}
+
+func parseYearFromMetadataDate(raw string) int {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	year := yearPattern.FindString(raw)
+	if year == "" {
+		return 0
+	}
+	parsed, err := strconv.Atoi(year)
+	if err != nil {
+		return 0
+	}
+	return parsed
 }
 
 func sanitizeUploadedFilename(uploadedFilename string, fallbackFormat string) string {

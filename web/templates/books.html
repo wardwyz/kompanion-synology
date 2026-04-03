@@ -33,7 +33,7 @@
 
             {{ if .Series }}
             <p class="book-series">
-                系列：{{ .Series }}{{ with .SeriesIndex }} #{{ .Decimal }}{{ end }}
+                系列：{{ .Series }}{{ with .SeriesIndex }} 豆瓣评分：{{ .Decimal }}{{ end }}
             </p>
             {{ end }}
 

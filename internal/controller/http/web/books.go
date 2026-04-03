@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
@@ -33,6 +35,8 @@ type BookWithProgress struct {
 }
 
 const bookProgressFetchConcurrency = 6
+
+var webYearPattern = regexp.MustCompile(`\d{4}`)
 
 func newBooksRoutes(handler *gin.RouterGroup, shelf library.Shelf, stats stats.ReadingStats, progress syncpkg.Progress, notesSvc notes.Service, l logger.Interface) {
 	r := &booksRoutes{
@@ -236,6 +240,7 @@ func (r *booksRoutes) scrapeBookMetadata(c *gin.Context) {
 		Author:      enriched.Author,
 		Description: enriched.Description,
 		Publisher:   enriched.Publisher,
+		Year:        parseYearFromMetadataDate(enriched.Date),
 		ISBN:        enriched.ISBN,
 		Series:      enriched.Series,
 		SeriesIndex: seriesIndex,
@@ -245,6 +250,22 @@ func (r *booksRoutes) scrapeBookMetadata(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/books/"+bookID)
+}
+
+func parseYearFromMetadataDate(raw string) int {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	year := webYearPattern.FindString(raw)
+	if year == "" {
+		return 0
+	}
+	parsed, err := strconv.Atoi(year)
+	if err != nil {
+		return 0
+	}
+	return parsed
 }
 
 func (r *booksRoutes) viewBook(c *gin.Context) {

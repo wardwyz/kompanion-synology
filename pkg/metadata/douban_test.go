@@ -155,14 +155,18 @@ func TestParseDoubanBookPageExtractsAuthorAndSeries(t *testing.T) {
 	body := `
 <html>
   <head>
-    <meta property="og:title" content="三体"/>
-    <meta property="og:description" content="科幻小说"/>
+	<meta property="og:title" content="三体"/>
+	<meta property="og:description" content="科幻小说"/>
+	<strong class="ll rating_num" property="v:average">9.2</strong>
   </head>
   <body>
-    <div id="info">
-      <span class="pl">作者:</span> <a href="/author/1">刘慈欣</a><br/>
-      <span class="pl">丛书:</span> <a href="/series/1">地球往事三部曲</a><br/>
-    </div>
+	<div id="info">
+	  <span class="pl">作者:</span> <a href="/author/1">刘慈欣</a><br/>
+	  <span class="pl">丛书:</span> <a href="/series/1">地球往事三部曲</a><br/>
+	  <span class="pl">出版社:</span> 重庆出版社<br/>
+	  <span class="pl">出版年:</span> 2008-1<br/>
+	  <span class="pl">ISBN:</span> 978-7-5366-9293-0<br/>
+	</div>
   </body>
 </html>`
 
@@ -172,6 +176,18 @@ func TestParseDoubanBookPageExtractsAuthorAndSeries(t *testing.T) {
 	}
 	if got.Series != "地球往事三部曲" {
 		t.Fatalf("expected series 地球往事三部曲, got %q", got.Series)
+	}
+	if got.Publisher != "重庆出版社" {
+		t.Fatalf("expected publisher 重庆出版社, got %q", got.Publisher)
+	}
+	if got.Date != "2008" {
+		t.Fatalf("expected normalized publication year 2008, got %q", got.Date)
+	}
+	if got.ISBN != "9787536692930" {
+		t.Fatalf("expected normalized ISBN, got %q", got.ISBN)
+	}
+	if got.SeriesIndex != "9.2" {
+		t.Fatalf("expected douban rating in series index field, got %q", got.SeriesIndex)
 	}
 }
 

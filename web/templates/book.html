@@ -48,7 +48,7 @@
                 </label>
                 <label>
                     豆瓣评分
-                    <input type="text" name="series_index" placeholder="豆瓣评分" value="{{ with .SeriesIndex }}{{ .Decimal }}{{ else }}未知{{ end }}">
+                    <input type="number" step="0.01" name="series_index" placeholder="豆瓣评分" value="{{ with .SeriesIndex }}{{ .Decimal }}{{ end }}">
                 </label>
             </div>
 

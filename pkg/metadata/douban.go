@@ -14,7 +14,7 @@ import (
 var (
 	doubanTitlePattern       = regexp.MustCompile(`<meta\s+property="og:title"\s+content="([^"]+)"`)
 	doubanDescriptionPattern = regexp.MustCompile(`<meta\s+property="og:description"\s+content="([^"]+)"`)
-	doubanRatingPattern      = regexp.MustCompile(`<strong[^>]*class="ll\s+rating_num"[^>]*>([^<]+)</strong>`)
+	doubanRatingPattern      = regexp.MustCompile(`<strong[^>]*class="[^"]*\brating_num\b[^"]*"[^>]*>([^<]+)</strong>`)
 	doubanSearchSubject      = regexp.MustCompile(`/subject/(\d+)/`)
 	doubanInfoBlockPattern   = regexp.MustCompile(`(?s)<div[^>]+id="info"[^>]*>(.*?)</div>`)
 	doubanTagPattern         = regexp.MustCompile(`(?s)<[^>]+>`)
